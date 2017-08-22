@@ -7,6 +7,7 @@ import java.util.HashMap;
  */
 public abstract class Agent {
     protected World world = null;
+    protected String name = null;
 
     public Agent(World world) {
         this.world = world;
