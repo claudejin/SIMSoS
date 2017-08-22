@@ -98,6 +98,11 @@ public class Robot extends Agent{
     }
 
     @Override
+    public String getSymbol() {
+        return null;
+    }
+
+    @Override
     public HashMap<String, Object> getProperties() {
         LinkedHashMap<String, Object> agentProperties = new LinkedHashMap<String, Object>();
         agentProperties.put("xpos", xpos);

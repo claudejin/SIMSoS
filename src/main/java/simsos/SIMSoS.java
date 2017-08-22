@@ -1,17 +1,12 @@
 package simsos;
 
 import mci.Main;
-import simsos.propcheck.PropertyChecker;
-import simsos.sa.method.SPRT;
-import simsos.scenario.robot.RobotScenario;
 import simsos.scenario.thesis.ThesisScenario;
 import simsos.simulation.Simulator;
 import simsos.simulation.component.Scenario;
-import simsos.simulation.component.Snapshot;
 import simsos.simulation.component.World;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 
 /**
@@ -33,7 +28,7 @@ public class SIMSoS {
 
         Scenario scenario = new ThesisScenario(ThesisScenario.SoSType.Collaborative);
         World world = scenario.getWorld();
-        Simulator.execute(world, 100);
+        Simulator.execute(world, 7);
 //        PropertyChecker checker = scenario.getChecker();
 //
 //        SPRT sprt = new SPRT();

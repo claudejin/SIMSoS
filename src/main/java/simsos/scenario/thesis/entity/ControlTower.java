@@ -49,6 +49,11 @@ public class ControlTower extends Agent {
     }
 
     @Override
+    public String getSymbol() {
+        return "C";
+    }
+
+    @Override
     public HashMap<String, Object> getProperties() {
         return new HashMap<String, Object>();
     }

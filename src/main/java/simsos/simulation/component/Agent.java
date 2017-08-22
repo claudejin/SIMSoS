@@ -1,11 +1,13 @@
 package simsos.simulation.component;
 
+import simsos.simulation.analysis.HasName;
+
 import java.util.HashMap;
 
 /**
  * Created by mgjin on 2017-06-21.
  */
-public abstract class Agent {
+public abstract class Agent implements HasName {
     protected World world = null;
     protected String name = null;
 

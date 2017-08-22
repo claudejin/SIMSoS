@@ -5,7 +5,7 @@ import java.util.HashMap;
 public class Message {
     public enum Purpose {ReqInfo, ReqAction, Response, Delivery, Order}
 
-    public String name;
+    public String name; // description
 
     public String sender;
     public String receiver;

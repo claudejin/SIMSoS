@@ -1,8 +1,8 @@
 package simsos.scenario.robot;
 
 import simsos.propcheck.pattern.ExistenceChecker;
-import simsos.simulation.component.PropertyValue;
-import simsos.simulation.component.Snapshot;
+import simsos.simulation.analysis.PropertyValue;
+import simsos.simulation.analysis.Snapshot;
 
 import java.util.ArrayList;
 

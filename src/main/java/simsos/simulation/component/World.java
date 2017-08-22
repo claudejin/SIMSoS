@@ -1,6 +1,9 @@
 package simsos.simulation.component;
 
+import simsos.simulation.analysis.Snapshot;
+
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 
 /**
@@ -32,6 +35,8 @@ public abstract class World {
     public int getTime() {
         return this.time;
     }
+
+    public abstract HashMap<String, Object> getResources();
 
     public Snapshot getCurrentSnapshot() {
         // Environment - Property - Value

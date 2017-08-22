@@ -1,7 +1,7 @@
 package simsos.propcheck.pattern;
 
 import simsos.propcheck.PropertyChecker;
-import simsos.simulation.component.Snapshot;
+import simsos.simulation.analysis.Snapshot;
 
 import java.util.ArrayList;
 

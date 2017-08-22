@@ -17,6 +17,13 @@ public class Location {
         return this.y;
     }
 
+    public Location move(int transX, int transY) {
+        moveX(transX);
+        moveY(transY);
+
+        return this;
+    }
+
     public int moveX(int transX) {
         return this.x += transX ;
     }

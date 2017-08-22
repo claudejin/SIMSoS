@@ -10,7 +10,7 @@ public class ThesisScenario extends Scenario {
     public enum SoSType {Directed, Acknowledged, Collaborative, Virtual}
 
     public ThesisScenario(SoSType type) {
-        this.world = new ThesisWorld();
+        this.world = new ThesisWorld(5);
 
         this.world.addAgent(new ControlTower(this.world, "ControlTower"));
         this.world.addAgent(new FireFighter(this.world, "FireFighter1"));
