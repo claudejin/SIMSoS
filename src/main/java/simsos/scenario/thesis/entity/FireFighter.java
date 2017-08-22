@@ -9,6 +9,8 @@ import simsos.simulation.component.World;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Random;
+import java.util.function.Supplier;
 
 // Rescue the wounded (report their location public)
 
@@ -33,7 +35,10 @@ import java.util.HashMap;
 
 public class FireFighter extends Agent {
 
+    private enum Direction {NONE, LEFT, RIGHT, UP, DOWN}
+
     private Location location;
+    private Direction lastDirection;
 
     public FireFighter(World world, String name) {
         super(world);
@@ -49,23 +54,59 @@ public class FireFighter extends Agent {
 
             @Override
             public void execute() {
-                FireFighter.this.location.move(1, 1);
+                ArrayList<Supplier<Integer>> functions = new ArrayList<Supplier<Integer>>();
 
-                ArrayList<Patient> patients = (ArrayList<Patient>) FireFighter.this.world.getResources().get("Patients");
-                for (Patient patient : patients) {
-                    if (patient.getLocation().equals(FireFighter.this.location) &&
-                            patient.getStatus() == Patient.Status.Initial) {
-                        patient.setStatus(Patient.Status.Discovered);
-                        break;
-                    }
-                }
+                if (FireFighter.this.location.getX() > 0 && lastDirection != Direction.RIGHT)
+                    functions.add(FireFighter.this::moveLeft);
+                if (FireFighter.this.location.getX() < ThesisWorld.MAP_SIZE.getLeft() - 1 && lastDirection != Direction.LEFT)
+                    functions.add(FireFighter.this::moveRight);
+                if (FireFighter.this.location.getY() > 0 && lastDirection != Direction.DOWN)
+                    functions.add(FireFighter.this::moveUp);
+                if (FireFighter.this.location.getY() < ThesisWorld.MAP_SIZE.getRight() - 1 && lastDirection != Direction.UP)
+                    functions.add(FireFighter.this::moveDown);
+
+                functions.get(new Random().nextInt(functions.size())).get();
+                FireFighter.this.discoverPatient(); // Succeed or fail
             }
 
             @Override
             public String getName() {
-                return null;
+                return FireFighter.this.getName() + ": Move randomly";
             }
         };
+    }
+
+    public int moveLeft() {
+        this.lastDirection = Direction.LEFT;
+        return this.location.moveX(-1);
+    }
+
+    public int moveRight() {
+        this.lastDirection = Direction.RIGHT;
+        return this.location.moveX(1);
+    }
+
+    public int moveUp() {
+        this.lastDirection = Direction.UP;
+        return this.location.moveY(-1);
+    }
+
+    public int moveDown() {
+        this.lastDirection = Direction.DOWN;
+        return this.location.moveY(1);
+    }
+
+    public boolean discoverPatient() {
+        ArrayList<Patient> patients = (ArrayList<Patient>) this.world.getResources().get("Patients");
+        for (Patient patient : patients) {
+            if (patient.getLocation().equals(FireFighter.this.location) &&
+                    patient.getStatus() == Patient.Status.Initial) {
+                patient.setStatus(Patient.Status.Discovered);
+                return true;
+            }
+        }
+
+        return false;
     }
 
     @Override

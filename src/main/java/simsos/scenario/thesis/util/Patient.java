@@ -72,7 +72,7 @@ public class Patient implements HasName {
                 else
                     bleedPoint = 5;
 
-                this.lifePoint = Math.max(0, this.lifePoint - bleedPoint);
+//                this.lifePoint = Math.max(0, this.lifePoint - bleedPoint);
 
                 if (this.lifePoint == 0)
                     this.status = Status.Dead;

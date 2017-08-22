@@ -1,5 +1,7 @@
 package simsos.scenario.thesis;
 
+import org.apache.commons.lang3.StringUtils;
+import simsos.scenario.thesis.entity.Hospital;
 import simsos.scenario.thesis.util.Location;
 import simsos.scenario.thesis.util.Pair;
 import simsos.scenario.thesis.util.Patient;
@@ -15,7 +17,17 @@ import java.util.*;
 // - Maintain reported wounded persons (for simulation log only)
 
 public class ThesisWorld extends World {
-    public static final Pair<Integer, Integer> MAP_SIZE = new Pair<Integer, Integer>(19, 19);
+    public static final String ANSI_RESET = "\u001B[0m";
+    public static final String ANSI_BLACK = "\u001B[30m";
+    public static final String ANSI_RED = "\u001B[31m";
+    public static final String ANSI_GREEN = "\u001B[32m";
+    public static final String ANSI_YELLOW = "\u001B[33m";
+    public static final String ANSI_BLUE = "\u001B[34m";
+    public static final String ANSI_PURPLE = "\u001B[35m";
+    public static final String ANSI_CYAN = "\u001B[36m";
+    public static final String ANSI_WHITE = "\u001B[37m";
+
+    public static final Pair<Integer, Integer> MAP_SIZE = new Pair<Integer, Integer>(9, 9);
 
     public ArrayList<Patient> patients = new ArrayList<Patient>();
 
@@ -36,13 +48,39 @@ public class ThesisWorld extends World {
         // Adjust severity of patients
 
         // Adjust geographical distribution of patients
-        int offset = 0;
+        Random rd = new Random();
         for (Patient patient : this.patients) {
-            Random rd = new Random();
-            //patient.setLocation(new Location(rd.nextInt(MAP_SIZE.getLeft()), rd.nextInt(MAP_SIZE.getRight())));
-            offset++;
-            patient.setLocation(new Location(9 + offset, 9 + offset));
+            int x = -1, y = -1;
+            do {
+                x = (int) Math.round(rd.nextGaussian() * 1.5 + MAP_SIZE.getLeft() / 2);
+                y = (int) Math.round(rd.nextGaussian() * 1.5 + MAP_SIZE.getLeft() / 2);
+
+                patient.setLocation(new Location(x, y));
+            } while (!checkValidPatientLocation(x, y));
         }
+    }
+
+    public boolean checkValidLocation(int x, int y) {
+        if (x < 0 || x > MAP_SIZE.getLeft() - 1)
+            return false;
+        if (y < 0 || y > MAP_SIZE.getRight() - 1)
+            return false;
+
+        return true;
+    }
+
+    public boolean checkValidPatientLocation(int x, int y) {
+        if (!checkValidLocation(x, y))
+            return false;
+
+        for (Agent agent : this.agents)
+            if (agent instanceof Hospital) {
+                Location location = (Location) agent.getProperties().get("location");
+                if (location.equals(new Location(x, y)))
+                    return false;
+            }
+
+        return true;
     }
 
     @Override
@@ -84,10 +122,9 @@ public class ThesisWorld extends World {
         snapshot.addProperties(null, worldProperties);
 
         for (Patient patient : this.patients)
-            if (patient.getStatus() == Patient.Status.Discovered)
                 snapshot.addProperty(patient, "location", patient.getLocation());
 
-        printCurrentMap(snapshot);
+//        printCurrentMap(snapshot);
         return snapshot;
     }
 
@@ -103,8 +140,14 @@ public class ThesisWorld extends World {
                Location location = (Location) pv.value;
                if (map[location.getX()][location.getY()] == null)
                    map[location.getX()][location.getY()] = "";
-               map[location.getX()][location.getY()] += pv.subject.getSymbol();
-               maximalLength = Math.max(maximalLength, map[location.getX()][location.getY()].length());
+               if (pv.subject instanceof Patient)
+                   if (((Patient) pv.subject).getStatus() == Patient.Status.Discovered)
+                       map[location.getX()][location.getY()] += ANSI_RED + pv.subject.getSymbol() + ANSI_RESET;
+                   else
+                       map[location.getX()][location.getY()] += pv.subject.getSymbol();
+               else
+                   map[location.getX()][location.getY()] += pv.subject.getSymbol();
+               maximalLength = Math.max(maximalLength, map[location.getX()][location.getY()].replaceAll("\u001B\\[[;\\d]*m", "").length());
            }
         }
 
@@ -118,9 +161,9 @@ public class ThesisWorld extends World {
             System.out.print("│");
             for (int x = 0; x < MAP_SIZE.getLeft(); x++) {
                 if (map[x][y] == null)
-                    System.out.printf("%" + (2*maximalLength) + "s", "");
+                    System.out.print(StringUtils.repeat(" ", 2 * maximalLength));
                 else
-                    System.out.printf("%" + (2*maximalLength) + "s", map[x][y]);
+                    System.out.print(map[x][y] + StringUtils.repeat(" ", 2 * maximalLength - map[x][y].replaceAll("\u001B\\[[;\\d]*m", "").length()));
                 System.out.print("│");
             }
             System.out.println("");
