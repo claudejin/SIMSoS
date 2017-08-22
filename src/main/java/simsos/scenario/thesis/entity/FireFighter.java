@@ -1,16 +1,15 @@
 package simsos.scenario.thesis.entity;
 
+import simsos.scenario.thesis.ThesisScenario.SoSType;
 import simsos.scenario.thesis.ThesisWorld;
+import simsos.scenario.thesis.util.ABCItem;
 import simsos.scenario.thesis.util.Location;
 import simsos.scenario.thesis.util.Patient;
 import simsos.simulation.component.Action;
-import simsos.simulation.component.Agent;
 import simsos.simulation.component.World;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Random;
-import java.util.function.Supplier;
 
 // Rescue the wounded (report their location public)
 
@@ -33,9 +32,67 @@ import java.util.function.Supplier;
 // Virtual
 // FF-AutonMove
 
-public class FireFighter extends Agent {
+public class FireFighter extends RationalEconomicCS {
+
+    private Location headingLocation = ((ThesisWorld) world).getRandomPatientLocation();
 
     private enum Direction {NONE, LEFT, RIGHT, UP, DOWN}
+    private final Action moveLeft = new Action(1) {
+
+        @Override
+        public void execute() {
+            FireFighter.this.lastDirection = FireFighter.Direction.LEFT;
+            FireFighter.this.location.moveX(-1);
+            FireFighter.this.discoverPatient(); // Succeed or fail
+        }
+
+        @Override
+        public String getName() {
+            return FireFighter.this.getName() + ": Move left";
+        }
+    };
+    private final Action moveRight = new Action(1) {
+
+        @Override
+        public void execute() {
+            FireFighter.this.lastDirection = FireFighter.Direction.RIGHT;
+            FireFighter.this.location.moveX(1);
+            FireFighter.this.discoverPatient(); // Succeed or fail
+        }
+
+        @Override
+        public String getName() {
+            return FireFighter.this.getName() + ": Move right";
+        }
+    };
+    private final Action moveUp = new Action(1) {
+
+        @Override
+        public void execute() {
+            FireFighter.this.lastDirection = FireFighter.Direction.UP;
+            FireFighter.this.location.moveY(-1);
+            FireFighter.this.discoverPatient(); // Succeed or fail
+        }
+
+        @Override
+        public String getName() {
+            return FireFighter.this.getName() + ": Move up";
+        }
+    };
+    private final Action moveDown = new Action(1) {
+
+        @Override
+        public void execute() {
+            FireFighter.this.lastDirection = FireFighter.Direction.DOWN;
+            FireFighter.this.location.moveY(1);
+            FireFighter.this.discoverPatient(); // Succeed or fail
+        }
+
+        @Override
+        public String getName() {
+            return FireFighter.this.getName() + ": Move down";
+        }
+    };
 
     private Location location;
     private Direction lastDirection;
@@ -48,52 +105,74 @@ public class FireFighter extends Agent {
     }
 
     @Override
-    public Action step() {
-        // return Action.getNullAction(1, "null");
-        return new Action(1) {
+    protected void updateBelief() {
 
-            @Override
-            public void execute() {
-                ArrayList<Supplier<Integer>> functions = new ArrayList<Supplier<Integer>>();
-
-                if (FireFighter.this.location.getX() > 0 && lastDirection != Direction.RIGHT)
-                    functions.add(FireFighter.this::moveLeft);
-                if (FireFighter.this.location.getX() < ThesisWorld.MAP_SIZE.getLeft() - 1 && lastDirection != Direction.LEFT)
-                    functions.add(FireFighter.this::moveRight);
-                if (FireFighter.this.location.getY() > 0 && lastDirection != Direction.DOWN)
-                    functions.add(FireFighter.this::moveUp);
-                if (FireFighter.this.location.getY() < ThesisWorld.MAP_SIZE.getRight() - 1 && lastDirection != Direction.UP)
-                    functions.add(FireFighter.this::moveDown);
-
-                functions.get(new Random().nextInt(functions.size())).get();
-                FireFighter.this.discoverPatient(); // Succeed or fail
-            }
-
-            @Override
-            public String getName() {
-                return FireFighter.this.getName() + ": Move randomly";
-            }
-        };
     }
 
-    public int moveLeft() {
-        this.lastDirection = Direction.LEFT;
-        return this.location.moveX(-1);
+    @Override
+    protected void generateActionList() {
+        this.immediateActionList.clear();
+        this.normalActionList.clear();
+
+        // Location
+        switch ((SoSType) this.world.getResources().get("Type")) {
+            case Directed:
+            case Acknowledged:
+
+                break;
+        }
+
+        // Share
+        switch ((SoSType) this.world.getResources().get("Type")) {
+            case Acknowledged:
+            case Collaborative:
+
+                break;
+        }
+
+        // Report
+        switch ((SoSType) this.world.getResources().get("Type")) {
+            case Directed:
+            case Acknowledged:
+
+                break;
+        }
+
+        if (this.immediateActionList.size() > 0)
+            return;
+
+        // Directed Moves
+        if (this.world.getResources().get("Type") == SoSType.Directed) {
+
+        }
+
+        // Autonomous Moves
+        if (this.world.getResources().get("Type") != SoSType.Directed) {
+            if (this.location.equals(this.headingLocation))
+                updateHeadingLocation();
+
+//            if (FireFighter.this.location.getX() > 0 && lastDirection != Direction.RIGHT)
+//                normalActionList.add(new ABCItem(this.moveLeft, 0, this.location.distanceTo(headingLocation)));
+//            if (FireFighter.this.location.getX() < ThesisWorld.MAP_SIZE.getLeft() - 1 && lastDirection != Direction.LEFT)
+//                normalActionList.add(new ABCItem(this.moveRight, 0, this.location.distanceTo(headingLocation)));
+//            if (FireFighter.this.location.getY() > 0 && lastDirection != Direction.DOWN)
+//                normalActionList.add(new ABCItem(this.moveUp, 0, this.location.distanceTo(headingLocation)));
+//            if (FireFighter.this.location.getY() < ThesisWorld.MAP_SIZE.getRight() - 1 && lastDirection != Direction.UP)
+//                normalActionList.add(new ABCItem(this.moveDown, 0, this.location.distanceTo(headingLocation)));
+            if (FireFighter.this.location.getX() > 0)
+                normalActionList.add(new ABCItem(this.moveLeft, 0, this.location.distanceTo(headingLocation)));
+            if (FireFighter.this.location.getX() < ThesisWorld.MAP_SIZE.getLeft() - 1)
+                normalActionList.add(new ABCItem(this.moveRight, 0, this.location.distanceTo(headingLocation)));
+            if (FireFighter.this.location.getY() > 0)
+                normalActionList.add(new ABCItem(this.moveUp, 0, this.location.distanceTo(headingLocation)));
+            if (FireFighter.this.location.getY() < ThesisWorld.MAP_SIZE.getRight() - 1)
+                normalActionList.add(new ABCItem(this.moveDown, 0, this.location.distanceTo(headingLocation)));
+        }
     }
 
-    public int moveRight() {
-        this.lastDirection = Direction.RIGHT;
-        return this.location.moveX(1);
-    }
-
-    public int moveUp() {
-        this.lastDirection = Direction.UP;
-        return this.location.moveY(-1);
-    }
-
-    public int moveDown() {
-        this.lastDirection = Direction.DOWN;
-        return this.location.moveY(1);
+    private void updateHeadingLocation() {
+        while (this.location.equals(this.headingLocation))
+            this.headingLocation = ((ThesisWorld) world).getRandomPatientLocation();
     }
 
     public boolean discoverPatient() {
@@ -102,6 +181,8 @@ public class FireFighter extends Agent {
             if (patient.getLocation().equals(FireFighter.this.location) &&
                     patient.getStatus() == Patient.Status.Initial) {
                 patient.setStatus(Patient.Status.Discovered);
+
+                updateHeadingLocation();
                 return true;
             }
         }
@@ -112,6 +193,7 @@ public class FireFighter extends Agent {
     @Override
     public void reset() {
         this.location = new Location(ThesisWorld.MAP_SIZE.getLeft() / 2, ThesisWorld.MAP_SIZE.getRight() / 2);
+        updateHeadingLocation();
     }
 
     @Override

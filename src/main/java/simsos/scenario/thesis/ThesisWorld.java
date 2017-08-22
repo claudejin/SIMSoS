@@ -1,6 +1,7 @@
 package simsos.scenario.thesis;
 
 import org.apache.commons.lang3.StringUtils;
+import simsos.scenario.thesis.ThesisScenario.SoSType;
 import simsos.scenario.thesis.entity.Hospital;
 import simsos.scenario.thesis.util.Location;
 import simsos.scenario.thesis.util.Pair;
@@ -27,13 +28,22 @@ public class ThesisWorld extends World {
     public static final String ANSI_CYAN = "\u001B[36m";
     public static final String ANSI_WHITE = "\u001B[37m";
 
+    public SoSType type = null;
     public static final Pair<Integer, Integer> MAP_SIZE = new Pair<Integer, Integer>(9, 9);
 
     public ArrayList<Patient> patients = new ArrayList<Patient>();
 
-    public ThesisWorld(int nPatient) {
+    public ThesisWorld(SoSType type, int nPatient) {
+        this.type = type;
+
         for (int i = 0; i < nPatient; i++)
             patients.add(new Patient("Patient" + (i+1)));
+
+        this.reset();
+    }
+
+    public void reset(SoSType type) {
+        this.type = type;
 
         this.reset();
     }
@@ -48,15 +58,16 @@ public class ThesisWorld extends World {
         // Adjust severity of patients
 
         // Adjust geographical distribution of patients
-        Random rd = new Random();
+//        Random rd = new Random();
         for (Patient patient : this.patients) {
-            int x = -1, y = -1;
-            do {
-                x = (int) Math.round(rd.nextGaussian() * 1.5 + MAP_SIZE.getLeft() / 2);
-                y = (int) Math.round(rd.nextGaussian() * 1.5 + MAP_SIZE.getLeft() / 2);
-
-                patient.setLocation(new Location(x, y));
-            } while (!checkValidPatientLocation(x, y));
+            patient.setLocation(getRandomPatientLocation());
+//            int x = -1, y = -1;
+//            do {
+//                x = (int) Math.round(rd.nextGaussian() * 1.5 + MAP_SIZE.getLeft() / 2);
+//                y = (int) Math.round(rd.nextGaussian() * 1.5 + MAP_SIZE.getLeft() / 2);
+//
+//                patient.setLocation(new Location(x, y));
+//            } while (!checkValidPatientLocation(x, y));
         }
     }
 
@@ -69,23 +80,50 @@ public class ThesisWorld extends World {
         return true;
     }
 
-    public boolean checkValidPatientLocation(int x, int y) {
-        if (!checkValidLocation(x, y))
-            return false;
+    public boolean checkValidLocation(Location location) {
+        return checkValidLocation(location.getX(), location.getY());
+    }
 
-        for (Agent agent : this.agents)
+    public boolean checkValidPatientLocation(Location location) {
+        for (Agent agent : this.agents) {
             if (agent instanceof Hospital) {
-                Location location = (Location) agent.getProperties().get("location");
-                if (location.equals(new Location(x, y)))
+                Location hospitalLocation = (Location) agent.getProperties().get("location");
+                if (hospitalLocation.equals(location))
                     return false;
             }
+        }
 
         return true;
+    }
+
+    public Location getRandomPatientLocation() {
+        Random rd = new Random();
+        int x = -1, y = -1;
+        Location location = null;
+
+        boolean stoppingCondition = false;
+        while (!stoppingCondition) {
+            x = (int) Math.round(rd.nextGaussian() * 1.5 + MAP_SIZE.getLeft() / 2);
+            y = (int) Math.round(rd.nextGaussian() * 1.5 + MAP_SIZE.getLeft() / 2);
+            location = new Location(x, y);
+
+            if (!checkValidLocation(location))
+                continue;
+
+            if (!checkValidPatientLocation(location))
+                continue;
+
+            stoppingCondition = true;
+        }
+
+        return location;
     }
 
     @Override
     public HashMap<String, Object> getResources() {
         HashMap<String, Object> resources = new HashMap<String, Object>();
+        resources.put("Time", this.time);
+        resources.put("Type", this.type);
         resources.put("Agents", this.agents);
         resources.put("Patients", this.patients);
 

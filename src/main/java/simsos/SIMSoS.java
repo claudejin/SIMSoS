@@ -1,7 +1,9 @@
 package simsos;
 
 import mci.Main;
+import simsos.scenario.thesis.ThesisScenario.SoSType;
 import simsos.scenario.thesis.ThesisScenario;
+import simsos.scenario.thesis.ThesisWorld;
 import simsos.scenario.thesis.util.Patient;
 import simsos.simulation.Simulator;
 import simsos.simulation.component.Scenario;
@@ -30,13 +32,20 @@ public class SIMSoS {
 
         Scenario scenario = new ThesisScenario(ThesisScenario.SoSType.Collaborative, 81, 10, 0, 1);
         World world = scenario.getWorld();
-        Simulator.execute(world, 8);
-        ArrayList<Patient> patients = (ArrayList<Patient>) world.getResources().get("Patients");
-        int numDiscovered = 0;
-        for (Patient patient : patients)
-            if (patient.getStatus() == Patient.Status.Discovered)
-                numDiscovered++;
-        System.out.println("Discovered Rate: " + Math.round((float) numDiscovered / patients.size() * 100) + "% (" + numDiscovered + "/" + patients.size() + ")");
+
+        for (int i = 0; i < 5000; i++) {
+            ((ThesisWorld) world).reset(SoSType.Acknowledged);
+            Simulator.execute(world, 8);
+
+            ArrayList<Patient> patients = (ArrayList<Patient>) world.getResources().get("Patients");
+            int numDiscovered = 0;
+            for (Patient patient : patients)
+                if (patient.getStatus() == Patient.Status.Discovered)
+                    numDiscovered++;
+//            System.out.println("Discovered Rate: " + Math.round((float) numDiscovered / patients.size() * 100) + "% (" + numDiscovered + "/" + patients.size() + ")");
+            System.out.println(Math.round((float) numDiscovered / patients.size() * 100));
+        }
+
 //        PropertyChecker checker = scenario.getChecker();
 //
 //        SPRT sprt = new SPRT();

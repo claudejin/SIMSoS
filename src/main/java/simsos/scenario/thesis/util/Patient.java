@@ -52,7 +52,7 @@ public class Patient implements HasName {
     }
 
     public void bleed() {
-        switch(this.status) {
+        switch (this.status) {
             case Dead:
                 // This patient is already dead
             case Cured:
