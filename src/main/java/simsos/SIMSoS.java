@@ -33,9 +33,9 @@ public class SIMSoS {
         Scenario scenario = new ThesisScenario(ThesisScenario.SoSType.Collaborative, 81, 10, 0, 1);
         World world = scenario.getWorld();
 
-        for (int i = 0; i < 5000; i++) {
-            ((ThesisWorld) world).reset(SoSType.Acknowledged);
-            Simulator.execute(world, 8);
+        for (int i = 0; i < 1; i++) {
+            ((ThesisWorld) world).setSoSType(SoSType.Acknowledged);
+            Simulator.execute(world, 16);
 
             ArrayList<Patient> patients = (ArrayList<Patient>) world.getResources().get("Patients");
             int numDiscovered = 0;

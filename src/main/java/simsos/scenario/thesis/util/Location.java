@@ -24,6 +24,10 @@ public class Location {
         return this;
     }
 
+    public Location add(int transX, int transY) {
+        return new Location(this.x + transX, this.y + transY);
+    }
+
     public int moveX(int transX) {
         return this.x += transX ;
     }
@@ -32,8 +36,16 @@ public class Location {
         return this.y += transY;
     }
 
+    public int xDistanceTo(Location loc) {
+        return Math.abs(this.getX() - loc.getX());
+    }
+
+    public int yDistanceTo(Location loc) {
+        return Math.abs(this.getY() - loc.getY());
+    }
+
     public int distanceTo(Location loc) {
-        return Math.abs(this.getX() - loc.getX()) + Math.abs(this.getY() - loc.getY());
+        return xDistanceTo(loc) + yDistanceTo(loc);
     }
 
     @Override

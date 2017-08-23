@@ -4,12 +4,15 @@ import simsos.scenario.thesis.ThesisScenario.SoSType;
 import simsos.scenario.thesis.ThesisWorld;
 import simsos.scenario.thesis.util.ABCItem;
 import simsos.scenario.thesis.util.Location;
+import simsos.scenario.thesis.util.Maptrix;
 import simsos.scenario.thesis.util.Patient;
 import simsos.simulation.component.Action;
 import simsos.simulation.component.World;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 
 // Rescue the wounded (report their location public)
 
@@ -33,6 +36,8 @@ import java.util.HashMap;
 // FF-AutonMove
 
 public class FireFighter extends RationalEconomicCS {
+
+    Maptrix<HashSet> beliefMap = new Maptrix<HashSet>(HashSet.class, ThesisWorld.MAP_SIZE.getLeft(), ThesisWorld.MAP_SIZE.getRight());
 
     private Location headingLocation = ((ThesisWorld) world).getRandomPatientLocation();
 
@@ -106,7 +111,15 @@ public class FireFighter extends RationalEconomicCS {
 
     @Override
     protected void updateBelief() {
+        // Observe environment around me
+        Set<Patient> currentLocation = this.beliefMap.getValue(this.location.getX(), this.location.getY());
 
+        Maptrix<ArrayList<Patient>> patientsMap = (Maptrix<ArrayList<Patient>>) this.world.getResources().get("PatientsMap");
+        ArrayList<Patient> patients = patientsMap.getValue(this.location.getX(), this.location.getY());
+
+        for (Patient patient : patients)
+            if (patient.getStatus() == Patient.Status.Discovered)
+                currentLocation.add(patient);
     }
 
     @Override
@@ -151,22 +164,26 @@ public class FireFighter extends RationalEconomicCS {
             if (this.location.equals(this.headingLocation))
                 updateHeadingLocation();
 
-//            if (FireFighter.this.location.getX() > 0 && lastDirection != Direction.RIGHT)
-//                normalActionList.add(new ABCItem(this.moveLeft, 0, this.location.distanceTo(headingLocation)));
-//            if (FireFighter.this.location.getX() < ThesisWorld.MAP_SIZE.getLeft() - 1 && lastDirection != Direction.LEFT)
-//                normalActionList.add(new ABCItem(this.moveRight, 0, this.location.distanceTo(headingLocation)));
-//            if (FireFighter.this.location.getY() > 0 && lastDirection != Direction.DOWN)
-//                normalActionList.add(new ABCItem(this.moveUp, 0, this.location.distanceTo(headingLocation)));
-//            if (FireFighter.this.location.getY() < ThesisWorld.MAP_SIZE.getRight() - 1 && lastDirection != Direction.UP)
-//                normalActionList.add(new ABCItem(this.moveDown, 0, this.location.distanceTo(headingLocation)));
-            if (FireFighter.this.location.getX() > 0)
-                normalActionList.add(new ABCItem(this.moveLeft, 0, this.location.distanceTo(headingLocation)));
-            if (FireFighter.this.location.getX() < ThesisWorld.MAP_SIZE.getLeft() - 1)
-                normalActionList.add(new ABCItem(this.moveRight, 0, this.location.distanceTo(headingLocation)));
-            if (FireFighter.this.location.getY() > 0)
-                normalActionList.add(new ABCItem(this.moveUp, 0, this.location.distanceTo(headingLocation)));
-            if (FireFighter.this.location.getY() < ThesisWorld.MAP_SIZE.getRight() - 1)
-                normalActionList.add(new ABCItem(this.moveDown, 0, this.location.distanceTo(headingLocation)));
+            if (FireFighter.this.location.getX() > 0 && lastDirection != Direction.RIGHT)
+                normalActionList.add(new ABCItem(this.moveLeft, 0,
+                        this.location.add(-1, 0).distanceTo(headingLocation) +
+                                this.location.add(-1, 0).xDistanceTo(headingLocation)
+                ));
+            if (FireFighter.this.location.getX() < ThesisWorld.MAP_SIZE.getLeft() - 1 && lastDirection != Direction.LEFT)
+                normalActionList.add(new ABCItem(this.moveRight, 0,
+                        this.location.add(1, 0).distanceTo(headingLocation) +
+                                this.location.add(1, 0).xDistanceTo(headingLocation)
+                ));
+            if (FireFighter.this.location.getY() > 0 && lastDirection != Direction.DOWN)
+                normalActionList.add(new ABCItem(this.moveUp, 0,
+                        this.location.add(0, -1).distanceTo(headingLocation) +
+                                this.location.add(0, -1).yDistanceTo(headingLocation)
+                ));
+            if (FireFighter.this.location.getY() < ThesisWorld.MAP_SIZE.getRight() - 1 && lastDirection != Direction.UP)
+                normalActionList.add(new ABCItem(this.moveDown, 0,
+                        this.location.add(0, 1).distanceTo(headingLocation) +
+                                this.location.add(0, 1).yDistanceTo(headingLocation)
+                ));
         }
     }
 
@@ -176,11 +193,13 @@ public class FireFighter extends RationalEconomicCS {
     }
 
     public boolean discoverPatient() {
-        ArrayList<Patient> patients = (ArrayList<Patient>) this.world.getResources().get("Patients");
+        Maptrix<ArrayList<Patient>> patientsMap = (Maptrix<ArrayList<Patient>>) this.world.getResources().get("PatientsMap");
+        ArrayList<Patient> patients = patientsMap.getValue(this.location.getX(), this.location.getY());
+
         for (Patient patient : patients) {
-            if (patient.getLocation().equals(FireFighter.this.location) &&
-                    patient.getStatus() == Patient.Status.Initial) {
+            if (patient.getStatus() == Patient.Status.Initial) {
                 patient.setStatus(Patient.Status.Discovered);
+                updateBelief();
 
                 updateHeadingLocation();
                 return true;
@@ -192,6 +211,8 @@ public class FireFighter extends RationalEconomicCS {
 
     @Override
     public void reset() {
+        this.beliefMap.reset();
+
         this.location = new Location(ThesisWorld.MAP_SIZE.getLeft() / 2, ThesisWorld.MAP_SIZE.getRight() / 2);
         updateHeadingLocation();
     }
@@ -210,6 +231,7 @@ public class FireFighter extends RationalEconomicCS {
     public HashMap<String, Object> getProperties() {
         HashMap<String, Object> properties = new HashMap<String, Object>();
         properties.put("location", this.location);
+        properties.put("BeliefMap", this.beliefMap);
         return properties;
     }
 }

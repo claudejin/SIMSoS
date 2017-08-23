@@ -2,8 +2,10 @@ package simsos.scenario.thesis;
 
 import org.apache.commons.lang3.StringUtils;
 import simsos.scenario.thesis.ThesisScenario.SoSType;
+import simsos.scenario.thesis.entity.FireFighter;
 import simsos.scenario.thesis.entity.Hospital;
 import simsos.scenario.thesis.util.Location;
+import simsos.scenario.thesis.util.Maptrix;
 import simsos.scenario.thesis.util.Pair;
 import simsos.scenario.thesis.util.Patient;
 import simsos.simulation.analysis.PropertyValue;
@@ -18,6 +20,7 @@ import java.util.*;
 // - Maintain reported wounded persons (for simulation log only)
 
 public class ThesisWorld extends World {
+
     public static final String ANSI_RESET = "\u001B[0m";
     public static final String ANSI_BLACK = "\u001B[30m";
     public static final String ANSI_RED = "\u001B[31m";
@@ -30,11 +33,12 @@ public class ThesisWorld extends World {
 
     public SoSType type = null;
     public static final Pair<Integer, Integer> MAP_SIZE = new Pair<Integer, Integer>(9, 9);
+    public final Maptrix<ArrayList> patientsMap = new Maptrix<ArrayList>(ArrayList.class, MAP_SIZE.getLeft(), MAP_SIZE.getRight());
 
     public ArrayList<Patient> patients = new ArrayList<Patient>();
 
     public ThesisWorld(SoSType type, int nPatient) {
-        this.type = type;
+        this.setSoSType(type);
 
         for (int i = 0; i < nPatient; i++)
             patients.add(new Patient("Patient" + (i+1)));
@@ -42,10 +46,8 @@ public class ThesisWorld extends World {
         this.reset();
     }
 
-    public void reset(SoSType type) {
+    public void setSoSType(SoSType type) {
         this.type = type;
-
-        this.reset();
     }
 
     @Override
@@ -59,15 +61,10 @@ public class ThesisWorld extends World {
 
         // Adjust geographical distribution of patients
 //        Random rd = new Random();
+        patientsMap.reset();
         for (Patient patient : this.patients) {
             patient.setLocation(getRandomPatientLocation());
-//            int x = -1, y = -1;
-//            do {
-//                x = (int) Math.round(rd.nextGaussian() * 1.5 + MAP_SIZE.getLeft() / 2);
-//                y = (int) Math.round(rd.nextGaussian() * 1.5 + MAP_SIZE.getLeft() / 2);
-//
-//                patient.setLocation(new Location(x, y));
-//            } while (!checkValidPatientLocation(x, y));
+            patientsMap.getValue(patient.getLocation().getX(), patient.getLocation().getY()).add(patient);
         }
     }
 
@@ -126,6 +123,7 @@ public class ThesisWorld extends World {
         resources.put("Type", this.type);
         resources.put("Agents", this.agents);
         resources.put("Patients", this.patients);
+        resources.put("PatientsMap", this.patientsMap);
 
         return resources;
     }
@@ -160,12 +158,55 @@ public class ThesisWorld extends World {
         snapshot.addProperties(null, worldProperties);
 
         for (Patient patient : this.patients)
-                snapshot.addProperty(patient, "location", patient.getLocation());
+            snapshot.addProperty(patient, "location", patient.getLocation());
 
-//        printCurrentMap(snapshot);
+        printCurrentMap(snapshot);
+        printBeliefMap(snapshot);
         return snapshot;
     }
 
+    private void printBeliefMap(Snapshot snapshot) {
+        ArrayList<PropertyValue> prop = snapshot.getProperties();
+
+        for (PropertyValue pv : prop) {
+            if (pv.propertyName.equals("BeliefMap")) {
+                System.out.println(pv.subjectName + ": Belief Map");
+
+                String [][] map = new String[MAP_SIZE.getLeft()][MAP_SIZE.getRight()];
+                int maximalLength = 0;
+
+                Maptrix<Set<Patient>> beliefMap = (Maptrix<Set<Patient>>) pv.value;
+
+                for (int x = 0; x < MAP_SIZE.getLeft(); x++)
+                    for (int y = 0; y < MAP_SIZE.getRight(); y++) {
+                        map[x][y] = "" + beliefMap.getValue(x, y).size();
+                        maximalLength = Math.max(maximalLength, map[x][y].length());
+                    }
+
+                maximalLength = (maximalLength + 1) / 2; // roundup for division by 2
+
+                String horizontal = String.join("", Collections.nCopies(maximalLength, "─"));
+
+                System.out.println("┌" + String.join("┬", Collections.nCopies(MAP_SIZE.getLeft(), horizontal)) + "┐");
+
+                for (int y = 0; y < MAP_SIZE.getRight(); y++) {
+                    System.out.print("│");
+                    for (int x = 0; x < MAP_SIZE.getLeft(); x++) {
+                        if (map[x][y] == null)
+                            System.out.print(StringUtils.repeat(" ", 2 * maximalLength));
+                        else
+                            System.out.print(map[x][y] + StringUtils.repeat(" ", 2 * maximalLength - map[x][y].length()));
+                        System.out.print("│");
+                    }
+                    System.out.println("");
+                    if (y < MAP_SIZE.getRight() - 1)
+                        System.out.println("├" + String.join("┼", Collections.nCopies(MAP_SIZE.getLeft(), horizontal)) + "┤");
+                }
+
+                System.out.println("└" + String.join("┴", Collections.nCopies(MAP_SIZE.getLeft(), horizontal)) + "┘");
+            }
+        }
+    }
     private void printCurrentMap(Snapshot snapshot) {
         ArrayList<PropertyValue> prop = snapshot.getProperties();
         System.out.println("Time: " + this.time);
@@ -174,7 +215,7 @@ public class ThesisWorld extends World {
         int maximalLength = 0;
         for (PropertyValue pv : prop) {
            if (pv.propertyName.equals("location")) {
-               System.out.println(pv.subjectName + ": " + pv.value.toString());
+//               System.out.println(pv.subjectName + ": " + pv.value.toString());
                Location location = (Location) pv.value;
                if (map[location.getX()][location.getY()] == null)
                    map[location.getX()][location.getY()] = "";
