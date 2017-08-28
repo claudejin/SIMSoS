@@ -5,13 +5,20 @@ import simsos.simulation.analysis.Snapshot;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.Random;
 
 /**
  * Created by mgjin on 2017-06-21.
  */
 public abstract class World {
+    public final Random random;
+
     protected ArrayList<Agent> agents = new ArrayList<Agent>();
     protected int time = 0;
+
+    public World(long seed) {
+        this.random = new Random(seed);
+    }
 
     public ArrayList<Agent> getAgents() {
         return agents;

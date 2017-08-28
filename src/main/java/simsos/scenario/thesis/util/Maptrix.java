@@ -20,6 +20,9 @@ public class Maptrix<T> {
     }
 
     public void reset() {
+        if (this.clazz.isPrimitive())
+            return;
+
         for (int i = 0; i < xSize; i++)
             for (int j = 0; j < ySize; j++)
                 try {
@@ -31,11 +34,8 @@ public class Maptrix<T> {
                 }
     }
 
-    public void setValue(int x, int y, T val) {
-        if (x >= xSize || y >= ySize || x < 0 || y < 0)
-            throw new IndexOutOfBoundsException();
-
-        values[x][y] = val;
+    public T getValue(Location location) {
+        return this.getValue(location.getX(), location.getY());
     }
 
     public T getValue(int x, int y) {
@@ -43,5 +43,16 @@ public class Maptrix<T> {
             throw new IndexOutOfBoundsException();
 
         return values[x][y];
+    }
+
+    public void setValue(Location location, T val) {
+        this.setValue(location.getX(), location.getY(), val);
+    }
+
+    public void setValue(int x, int y, T val) {
+        if (x >= xSize || y >= ySize || x < 0 || y < 0)
+            throw new IndexOutOfBoundsException();
+
+        values[x][y] = val;
     }
 }

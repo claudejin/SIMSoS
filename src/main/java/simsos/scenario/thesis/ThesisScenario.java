@@ -12,7 +12,7 @@ public class ThesisScenario extends Scenario {
     public ThesisScenario(SoSType type, int nPatient, int nFireFighter, int nAmbulance, int nHospital) {
         this.world = new ThesisWorld(type, nPatient);
 
-        this.world.addAgent(new ControlTower(this.world, "ControlTower"));
+//        this.world.addAgent(new ControlTower(this.world, "ControlTower"));
 
         for (int i = 1; i <= nFireFighter; i++)
             this.world.addAgent(new FireFighter(this.world, "FireFighter" + i));

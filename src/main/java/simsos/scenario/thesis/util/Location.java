@@ -24,16 +24,16 @@ public class Location {
         return this;
     }
 
-    public Location add(int transX, int transY) {
-        return new Location(this.x + transX, this.y + transY);
-    }
-
     public int moveX(int transX) {
         return this.x += transX ;
     }
 
     public int moveY(int transY) {
         return this.y += transY;
+    }
+
+    public Location add(int transX, int transY) {
+        return new Location(this.x + transX, this.y + transY);
     }
 
     public int xDistanceTo(Location loc) {

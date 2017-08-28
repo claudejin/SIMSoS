@@ -5,6 +5,8 @@ import simsos.simulation.analysis.HasName;
 import java.util.Random;
 
 public class Patient implements HasName {
+    private final Random random;
+
     public enum Status {Initial, Discovered, OnTransport, Hospitalized, Cured, Dead}
     public enum Severity {Delayed, Immediate}
 
@@ -14,7 +16,8 @@ public class Patient implements HasName {
     private int lifePoint;
     private Location location;
 
-    public Patient(String name) {
+    public Patient(Random random, String name) {
+        this.random = random;
         this.name = name;
 
         this.reset();
@@ -22,7 +25,7 @@ public class Patient implements HasName {
 
     public void reset() {
         this.status = Status.Initial;
-        this.severity = new Random().nextInt(2) == 1 ? Severity.Immediate : Severity.Delayed;
+        this.severity = this.random.nextInt(2) == 1 ? Severity.Immediate : Severity.Delayed;
         this.lifePoint = 50;
         this.location = new Location(0, 0);
     }

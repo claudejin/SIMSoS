@@ -1,13 +1,12 @@
 package simsos.scenario.thesis;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.math3.distribution.NormalDistribution;
 import simsos.scenario.thesis.ThesisScenario.SoSType;
 import simsos.scenario.thesis.entity.FireFighter;
 import simsos.scenario.thesis.entity.Hospital;
-import simsos.scenario.thesis.util.Location;
-import simsos.scenario.thesis.util.Maptrix;
-import simsos.scenario.thesis.util.Pair;
-import simsos.scenario.thesis.util.Patient;
+import simsos.scenario.thesis.entity.RationalEconomicCS;
+import simsos.scenario.thesis.util.*;
 import simsos.simulation.analysis.PropertyValue;
 import simsos.simulation.analysis.Snapshot;
 import simsos.simulation.component.*;
@@ -32,16 +31,22 @@ public class ThesisWorld extends World {
     public static final String ANSI_WHITE = "\u001B[37m";
 
     public SoSType type = null;
-    public static final Pair<Integer, Integer> MAP_SIZE = new Pair<Integer, Integer>(9, 9);
+    public final int nPatient;
+
+    public static final Pair<Integer, Integer> MAP_SIZE = new Pair<Integer, Integer>(19, 19);
+    public final Maptrix<Integer> expectedPatientsMap = new Maptrix<Integer>(Integer.TYPE, MAP_SIZE.getLeft(), MAP_SIZE.getRight());
     public final Maptrix<ArrayList> patientsMap = new Maptrix<ArrayList>(ArrayList.class, MAP_SIZE.getLeft(), MAP_SIZE.getRight());
 
     public ArrayList<Patient> patients = new ArrayList<Patient>();
 
     public ThesisWorld(SoSType type, int nPatient) {
+        super(new Random().nextLong());
+
         this.setSoSType(type);
+        this.nPatient = nPatient;
 
         for (int i = 0; i < nPatient; i++)
-            patients.add(new Patient("Patient" + (i+1)));
+            patients.add(new Patient(this.random, "Patient" + (i+1)));
 
         this.reset();
     }
@@ -60,15 +65,19 @@ public class ThesisWorld extends World {
         // Adjust severity of patients
 
         // Adjust geographical distribution of patients
-//        Random rd = new Random();
         patientsMap.reset();
         for (Patient patient : this.patients) {
             patient.setLocation(getRandomPatientLocation());
-            patientsMap.getValue(patient.getLocation().getX(), patient.getLocation().getY()).add(patient);
+            patientsMap.getValue(patient.getLocation()).add(patient);
         }
+        generateExpectedPatientsMap();
     }
 
-    public boolean checkValidLocation(int x, int y) {
+    private boolean checkValidLocation(Location location) {
+        return checkValidLocation(location.getX(), location.getY());
+    }
+
+    private boolean checkValidLocation(int x, int y) {
         if (x < 0 || x > MAP_SIZE.getLeft() - 1)
             return false;
         if (y < 0 || y > MAP_SIZE.getRight() - 1)
@@ -77,11 +86,7 @@ public class ThesisWorld extends World {
         return true;
     }
 
-    public boolean checkValidLocation(Location location) {
-        return checkValidLocation(location.getX(), location.getY());
-    }
-
-    public boolean checkValidPatientLocation(Location location) {
+    private boolean checkValidPatientLocation(Location location) {
         for (Agent agent : this.agents) {
             if (agent instanceof Hospital) {
                 Location hospitalLocation = (Location) agent.getProperties().get("location");
@@ -93,15 +98,30 @@ public class ThesisWorld extends World {
         return true;
     }
 
-    public Location getRandomPatientLocation() {
-        Random rd = new Random();
+    private void generateExpectedPatientsMap() {
+        NormalDistribution xND = new NormalDistribution(MAP_SIZE.getLeft() / 2, 1.5);
+        NormalDistribution yND = new NormalDistribution(MAP_SIZE.getLeft() / 2, 1.5);
+
+        for (int x = 0; x < MAP_SIZE.getLeft(); x++)
+            for (int y = 0; y < MAP_SIZE.getRight(); y++) {
+                double xProb = xND.cumulativeProbability(x) - xND.cumulativeProbability(x - 1);
+                double nX = xProb * this.nPatient;
+
+                double yProb = xND.cumulativeProbability(y) - xND.cumulativeProbability(y - 1);
+                int nXY = (int) Math.round(yProb * nX);
+
+                this.expectedPatientsMap.setValue(x, y, nXY);
+            }
+    }
+
+    private Location getRandomPatientLocation() {
         int x = -1, y = -1;
         Location location = null;
 
         boolean stoppingCondition = false;
         while (!stoppingCondition) {
-            x = (int) Math.round(rd.nextGaussian() * 1.5 + MAP_SIZE.getLeft() / 2);
-            y = (int) Math.round(rd.nextGaussian() * 1.5 + MAP_SIZE.getLeft() / 2);
+            x = (int) Math.round(this.random.nextGaussian() * 1.5 + MAP_SIZE.getLeft() / 2);
+            y = (int) Math.round(this.random.nextGaussian() * 1.5 + MAP_SIZE.getLeft() / 2);
             location = new Location(x, y);
 
             if (!checkValidLocation(location))
@@ -123,9 +143,19 @@ public class ThesisWorld extends World {
         resources.put("Type", this.type);
         resources.put("Agents", this.agents);
         resources.put("Patients", this.patients);
-        resources.put("PatientsMap", this.patientsMap);
+        resources.put("ExpectedPatientsMap", this.expectedPatientsMap);
 
         return resources;
+    }
+
+    public void sendMessage(Message message) {
+        System.out.println("Messages: " + message.sender + " - " + message.getName());
+
+        // Send the message to the receiver(s)
+        for (Agent agent : this.agents)
+            if (agent instanceof RationalEconomicCS)
+                if (agent.getName().startsWith(message.receiver))
+                    ((RationalEconomicCS) agent).receiveMessage(message);
     }
 
     @Override
@@ -160,17 +190,53 @@ public class ThesisWorld extends World {
         for (Patient patient : this.patients)
             snapshot.addProperty(patient, "location", patient.getLocation());
 
-        printCurrentMap(snapshot);
-        printBeliefMap(snapshot);
+//        printExpectedPatientsMap();
+//        printCurrentMap(snapshot);
+//        printBeliefMap(snapshot);
         return snapshot;
+    }
+
+    private void printExpectedPatientsMap() {
+        System.out.println("Expected Patients Map");
+
+        String [][] map = new String[MAP_SIZE.getLeft()][MAP_SIZE.getRight()];
+        int maximalLength = 0;
+
+        for (int x = 0; x < MAP_SIZE.getLeft(); x++)
+            for (int y = 0; y < MAP_SIZE.getRight(); y++) {
+                map[x][y] = "" + expectedPatientsMap.getValue(x, y);
+                maximalLength = Math.max(maximalLength, map[x][y].length());
+            }
+
+        maximalLength = (maximalLength + 1) / 2; // roundup for division by 2
+
+        String horizontal = String.join("", Collections.nCopies(maximalLength, "─"));
+
+        System.out.println("┌" + String.join("┬", Collections.nCopies(MAP_SIZE.getLeft(), horizontal)) + "┐");
+
+        for (int y = 0; y < MAP_SIZE.getRight(); y++) {
+            System.out.print("│");
+            for (int x = 0; x < MAP_SIZE.getLeft(); x++) {
+                if (map[x][y] == null)
+                    System.out.print(StringUtils.repeat(" ", 2 * maximalLength));
+                else
+                    System.out.print(map[x][y] + StringUtils.repeat(" ", 2 * maximalLength - map[x][y].length()));
+                System.out.print("│");
+            }
+            System.out.println("");
+            if (y < MAP_SIZE.getRight() - 1)
+                System.out.println("├" + String.join("┼", Collections.nCopies(MAP_SIZE.getLeft(), horizontal)) + "┤");
+        }
+
+        System.out.println("└" + String.join("┴", Collections.nCopies(MAP_SIZE.getLeft(), horizontal)) + "┘");
     }
 
     private void printBeliefMap(Snapshot snapshot) {
         ArrayList<PropertyValue> prop = snapshot.getProperties();
 
         for (PropertyValue pv : prop) {
-            if (pv.propertyName.equals("BeliefMap")) {
-                System.out.println(pv.subjectName + ": Belief Map");
+            if (pv.propertyName.endsWith("BeliefMap")) {
+                System.out.println(pv.subjectName + ": " + pv.propertyName);
 
                 String [][] map = new String[MAP_SIZE.getLeft()][MAP_SIZE.getRight()];
                 int maximalLength = 0;
@@ -251,5 +317,31 @@ public class ThesisWorld extends World {
         }
 
         System.out.println("└" + String.join("┴", Collections.nCopies(MAP_SIZE.getLeft(), horizontal)) + "┘");
+    }
+
+    public Set<Patient> getDiscoveredPatients(Location location) {
+        Set<Patient> discoveredPatients = new HashSet<Patient>();
+
+        ArrayList<Patient> patients = this.patientsMap.getValue(location);
+        for (Patient patient : patients) {
+            if (patient.getStatus() == Patient.Status.Discovered) {
+                discoveredPatients.add(patient);
+            }
+        }
+
+        return discoveredPatients;
+    }
+    public Patient getUndiscoveredPatient(Location location) {
+        ArrayList<Patient> patients = this.patientsMap.getValue(location);
+
+        for (Patient patient : patients) {
+            if (patient.getStatus() == Patient.Status.Initial) {
+                patient.setStatus(Patient.Status.Discovered);
+
+                return patient;
+            }
+        }
+
+        return null;
     }
 }
