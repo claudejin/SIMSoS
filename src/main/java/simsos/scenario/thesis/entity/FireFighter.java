@@ -49,7 +49,16 @@ public class FireFighter extends RationalEconomicCS {
 
     @Override
     protected void consumeInformation() {
-        // Process this.incomingInformation
+        for (Message message : this.incomingInformation) {
+            // Discovery belief share from FireFighters
+            if (message.sender.startsWith("FireFighter") && message.purpose == Message.Purpose.Delivery && message.data.containsKey("DiscoveryBelief")) {
+                Maptrix<HashSet> othersBeliefMap = (Maptrix<HashSet>) message.data.get("DiscoveryBelief");
+
+                for (int x = 0; x < ThesisWorld.MAP_SIZE.getLeft(); x++)
+                    for (int y = 0; y < ThesisWorld.MAP_SIZE.getRight(); y++)
+                        this.beliefMap.getValue(x, y).addAll(othersBeliefMap.getValue(x, y));
+            }
+        }
     }
 
     @Override
@@ -64,7 +73,15 @@ public class FireFighter extends RationalEconomicCS {
         switch ((SoSType) this.world.getResources().get("Type")) {
             case Acknowledged:
             case Collaborative:
+                Message beliefShare = new Message();
+                beliefShare.name = "Share discovery belief";
+                beliefShare.sender = this.getName();
+                beliefShare.receiver = "FireFighter";
+                beliefShare.location = this.location;
+                beliefShare.purpose = Message.Purpose.Delivery;
+                beliefShare.data.put("DiscoveryBelief", this.beliefMap);
 
+                this.immediateActionList.add(new ABCItem(new SendMessage(beliefShare), 0, 0));
                 break;
         }
     }
@@ -74,16 +91,15 @@ public class FireFighter extends RationalEconomicCS {
         for (Message message : this.incomingRequests) {
             // I-ReportLocation
             if (message.sender.equals("ControlTower") && message.purpose == Message.Purpose.ReqInfo && message.data.containsKey("Location")) {
-                Message locationReport = new Message();
-                locationReport.name = "Respond location report";
-                locationReport.sender = this.getName();
-                locationReport.receiver = "ControlTower";
-                locationReport.purpose = Message.Purpose.Response;
-                locationReport.data.put("Location", this.location);
-
                 switch ((SoSType) this.world.getResources().get("Type")) {
                     case Directed:
                     case Acknowledged:
+                        Message locationReport = new Message();
+                        locationReport.name = "Respond location report";
+                        locationReport.sender = this.getName();
+                        locationReport.receiver = "ControlTower";
+                        locationReport.purpose = Message.Purpose.Response;
+                        locationReport.data.put("Location", this.location);
 
                         this.immediateActionList.add(new ABCItem(new SendMessage(locationReport), 0, 0));
                         break;
@@ -92,16 +108,16 @@ public class FireFighter extends RationalEconomicCS {
 
             // I-ReportDiscovery
             if (message.sender.equals("ControlTower") && message.purpose == Message.Purpose.ReqInfo && message.data.containsKey("Discovered")) {
-                Message discoveryReport = new Message();
-                discoveryReport.name = "Respond discovery report";
-                discoveryReport.sender = this.getName();
-                discoveryReport.receiver = "ControlTower";
-                discoveryReport.purpose = Message.Purpose.Response;
-                discoveryReport.data.put("Discovered", this.discoveredPatient);
-
                 switch ((SoSType) this.world.getResources().get("Type")) {
                     case Directed:
                     case Acknowledged:
+                        Message discoveryReport = new Message();
+                        discoveryReport.name = "Respond discovery report";
+                        discoveryReport.sender = this.getName();
+                        discoveryReport.receiver = "ControlTower";
+                        discoveryReport.purpose = Message.Purpose.Response;
+                        discoveryReport.data.put("Discovered", this.discoveredPatient);
+                        discoveryReport.data.put("Location", this.discoveredPatient != null ? new Location(this.discoveredPatient.getLocation()) : null);
 
                         this.immediateActionList.add(new ABCItem(new SendMessage(discoveryReport), 0, 0));
                         break;
@@ -176,7 +192,7 @@ public class FireFighter extends RationalEconomicCS {
     @Override
     public HashMap<String, Object> getProperties() {
         HashMap<String, Object> properties = new HashMap<String, Object>();
-        properties.put("location", this.location);
+        properties.put("Location", this.location);
         properties.put("BeliefMap", this.beliefMap);
         return properties;
     }

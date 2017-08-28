@@ -1,8 +1,13 @@
 package simsos.scenario.thesis.util;
 
-public class Location {
+public class Location implements Cloneable {
     private int x;
     private int y;
+
+    public Location(Location location) {
+        this.x = location.x;
+        this.y = location.y;
+    }
 
     public Location(int x, int y) {
         this.x = x;

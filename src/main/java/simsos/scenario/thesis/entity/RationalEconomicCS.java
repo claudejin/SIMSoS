@@ -46,6 +46,10 @@ public abstract class RationalEconomicCS extends Agent {
         return selectBestAction();
     }
 
+    public void progress() {
+        this.phase = Phase.ActiveImmediateStep;
+    }
+
     protected void updateBelief() {
         // Observe environment
         observeEnvironment();
@@ -71,13 +75,15 @@ public abstract class RationalEconomicCS extends Agent {
 
         if (this.phase == Phase.ActiveImmediateStep) {
             generateActiveImmediateActions();
+            this.incomingInformation.clear();
             this.phase = Phase.PassiveImmediateStep;
         } else if (this.phase == Phase.PassiveImmediateStep) {
             generatePassiveImmediateActions();
+            this.incomingRequests.clear();
             this.phase = Phase.NormalStep;
         } else {
             generateNormalActions();
-            this.phase = Phase.ActiveImmediateStep;
+//            this.phase = Phase.ActiveImmediateStep;
         }
     }
 

@@ -27,7 +27,7 @@ import java.util.HashMap;
 // Virtual
 // HS-Auton
 
-public class Hospital extends Agent {
+public class Hospital extends RationalEconomicCS {
 
     private Location location;
 
@@ -39,8 +39,28 @@ public class Hospital extends Agent {
     }
 
     @Override
-    public Action step() {
-        return Action.getNullAction(1, "null");
+    protected void observeEnvironment() {
+
+    }
+
+    @Override
+    protected void consumeInformation() {
+
+    }
+
+    @Override
+    protected void generateActiveImmediateActions() {
+
+    }
+
+    @Override
+    protected void generatePassiveImmediateActions() {
+
+    }
+
+    @Override
+    protected void generateNormalActions() {
+
     }
 
     @Override
@@ -61,7 +81,7 @@ public class Hospital extends Agent {
     @Override
     public HashMap<String, Object> getProperties() {
         HashMap<String, Object> properties = new HashMap<String, Object>();
-        properties.put("location", this.location);
+        properties.put("Location", this.location);
         return properties;
     }
 }

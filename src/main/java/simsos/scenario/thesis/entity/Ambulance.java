@@ -63,7 +63,7 @@ public class Ambulance extends Agent {
     @Override
     public HashMap<String, Object> getProperties() {
         HashMap<String, Object> properties = new HashMap<String, Object>();
-        properties.put("location", this.location);
+        properties.put("Location", this.location);
         return properties;
     }
 }

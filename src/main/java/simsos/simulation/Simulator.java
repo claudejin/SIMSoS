@@ -27,6 +27,7 @@ public class Simulator {
             actions.clear();
             do {
                 immediateActions.clear();
+                actions.clear();
                 for (Agent agent : world.getAgents()) {
                     Action action = agent.step();
 

@@ -73,6 +73,15 @@ public class ThesisWorld extends World {
         generateExpectedPatientsMap();
     }
 
+    @Override
+    public void progress(int time) {
+        super.progress(time);
+
+        for (Agent agent : this.agents)
+            if (agent instanceof RationalEconomicCS)
+                ((RationalEconomicCS) agent).progress();
+    }
+
     private boolean checkValidLocation(Location location) {
         return checkValidLocation(location.getX(), location.getY());
     }
@@ -89,7 +98,7 @@ public class ThesisWorld extends World {
     private boolean checkValidPatientLocation(Location location) {
         for (Agent agent : this.agents) {
             if (agent instanceof Hospital) {
-                Location hospitalLocation = (Location) agent.getProperties().get("location");
+                Location hospitalLocation = (Location) agent.getProperties().get("Location");
                 if (hospitalLocation.equals(location))
                     return false;
             }
@@ -149,13 +158,25 @@ public class ThesisWorld extends World {
     }
 
     public void sendMessage(Message message) {
-        System.out.println("Messages: " + message.sender + " - " + message.getName());
+//        System.out.println("Messages: " + message.sender + " - " + message.getName());
 
         // Send the message to the receiver(s)
         for (Agent agent : this.agents)
-            if (agent instanceof RationalEconomicCS)
-                if (agent.getName().startsWith(message.receiver))
-                    ((RationalEconomicCS) agent).receiveMessage(message);
+            if (agent instanceof RationalEconomicCS) {
+                if (agent.getName().equals(message.sender))
+                    continue;
+
+                if (agent.getName().startsWith(message.receiver)) {
+                    if (message.location == null)
+                        ((RationalEconomicCS) agent).receiveMessage(message);
+                    else {
+                        Map<String, Object> props = agent.getProperties();
+                        if (props.containsKey("Location"))
+                            if (message.location.equals(props.get("Location")))
+                                ((RationalEconomicCS) agent).receiveMessage(message);
+                    }
+                }
+            }
     }
 
     @Override
@@ -188,8 +209,9 @@ public class ThesisWorld extends World {
         snapshot.addProperties(null, worldProperties);
 
         for (Patient patient : this.patients)
-            snapshot.addProperty(patient, "location", patient.getLocation());
+            snapshot.addProperty(patient, "Location", patient.getLocation());
 
+//        System.out.println("Time: " + this.time);
 //        printExpectedPatientsMap();
 //        printCurrentMap(snapshot);
 //        printBeliefMap(snapshot);
@@ -275,12 +297,10 @@ public class ThesisWorld extends World {
     }
     private void printCurrentMap(Snapshot snapshot) {
         ArrayList<PropertyValue> prop = snapshot.getProperties();
-        System.out.println("Time: " + this.time);
-
         String [][] map = new String[MAP_SIZE.getLeft()][MAP_SIZE.getRight()];
         int maximalLength = 0;
         for (PropertyValue pv : prop) {
-           if (pv.propertyName.equals("location")) {
+           if (pv.propertyName.equals("Location")) {
 //               System.out.println(pv.subjectName + ": " + pv.value.toString());
                Location location = (Location) pv.value;
                if (map[location.getX()][location.getY()] == null)

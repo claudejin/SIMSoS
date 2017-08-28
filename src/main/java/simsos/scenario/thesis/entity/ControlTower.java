@@ -1,5 +1,6 @@
 package simsos.scenario.thesis.entity;
 
+import simsos.scenario.thesis.ThesisScenario;
 import simsos.scenario.thesis.ThesisWorld;
 import simsos.scenario.thesis.util.*;
 import simsos.simulation.component.Action;
@@ -31,55 +32,39 @@ public class ControlTower extends RationalEconomicCS {
     }
 
     @Override
-    protected void updateBelief() {
-        ArrayList<Message> processed = new ArrayList<Message>();
-
-        for (Message message : this.incomingInformation) {
-            if (message.sender.startsWith("FireFighter") &&
-                    message.purpose == Message.Purpose.Response &&
-                    message.data.containsKey("Discovered")) {
-                processed.add(message);
-
-                if (message.data.get("Discovered") != null) {
-                    Patient newlyDiscovered = (Patient) message.data.get("Discovered");
-                    Location discoveredLocation = (Location) message.data.get("Location");
-
-                    this.discoveryBeliefMap.getValue(discoveredLocation.getX(), discoveredLocation.getY()).add(newlyDiscovered);
-                }
-            }
-        }
-
-        this.incomingInformation.removeAll(processed);
-    }
-
-    @Override
     protected void observeEnvironment() {
-
+        // It cannot observe environment because ControlTower has no physical existence
     }
 
     @Override
     protected void consumeInformation() {
+        for (Message message : this.incomingInformation) {
+            // Location report from FireFighters
+            if (message.sender.startsWith("FireFighter") && message.purpose == Message.Purpose.Response && message.data.containsKey("Location")) {
 
-    }
+            }
 
-    @Override
-    protected void generateActionList() {
-        this.normalActionList.clear();
+            // Discovery report from FireFighters
+            if (message.sender.startsWith("FireFighter") && message.purpose == Message.Purpose.Response && message.data.containsKey("Discovered")) {
+                if (message.data.get("Discovered") != null) {
+                    Patient discoveredPatient = (Patient) message.data.get("Discovered");
+                    Location discoveredLocation = (Location) message.data.get("Location");
 
-        if (this.phase == Phase.ActiveImmediateStep) {
-            this.immediateActionList.add(new ABCItem(new SendMessage(this.requestFireFighterDiscoveryReport), 0, 0));
-
-            this.phase = Phase.NormalStep;
-        } else {
-            this.normalActionList.add(new ABCItem(Action.getNullAction(1, "Control Tower: null"), 0, 0));
-
-            this.phase = Phase.ActiveImmediateStep;
+                    this.discoveryBeliefMap.getValue(discoveredLocation).add(discoveredPatient);
+                }
+            }
         }
     }
 
     @Override
     protected void generateActiveImmediateActions() {
+        if (this.world.getResources().get("Type") == ThesisScenario.SoSType.Directed) {
 
+        }
+
+        if (this.world.getResources().get("Type") == ThesisScenario.SoSType.Acknowledged) {
+            this.immediateActionList.add(new ABCItem(new SendMessage(this.requestFireFighterDiscoveryReport), 0, 0));
+        }
     }
 
     @Override

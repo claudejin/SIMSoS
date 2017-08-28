@@ -5,18 +5,19 @@ import java.util.HashMap;
 public class Message {
     public enum Purpose {ReqInfo, ReqAction, Response, Delivery, Order}
 
-    public String name; // description
+    public String name = null; // description
 
-    public String sender;
-    public String receiver;
-    public Purpose purpose;
+    public String sender = null;
+    public String receiver = null;
+    public Location location = null;
+    public Purpose purpose = null;
     public HashMap<String, Object> data = new HashMap<String, Object>();
-    public int additionalBenefit;
-    public int reducedCost;
-    public int timestamp;
+    public int additionalBenefit = 0;
+    public int reducedCost = 0;
+    public int timestamp = 0;
 
-    public String context;
-    public int trust;
+    public String context = null;
+    public int trust = 0;
 
     public String getName() {
         return this.name;
