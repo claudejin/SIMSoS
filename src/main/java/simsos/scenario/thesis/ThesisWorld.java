@@ -40,6 +40,8 @@ public class ThesisWorld extends World {
 
     public ArrayList<Patient> patients = new ArrayList<Patient>();
 
+    private static int stringFactor = 1;
+
     public ThesisWorld(SoSType type, int nPatient) {
         super(new Random().nextLong());
 
@@ -74,13 +76,17 @@ public class ThesisWorld extends World {
         generateExpectedPatientsMap();
 
         HashMap<String, Location> hospitalLocations = new HashMap<String, Location>();
+        HashMap<String, Integer> hospitalCapacities = new HashMap<String, Integer>();
         for (Agent agent : this.agents)
-            if (agent instanceof Hospital)
+            if (agent instanceof Hospital) {
                 hospitalLocations.put(agent.getName(), (Location) agent.getProperties().get("Location"));
+                hospitalCapacities.put(agent.getName(), (int) agent.getProperties().get("Capacity"));
+            }
 
         for (Agent agent : this.agents)
-            if (agent instanceof Ambulance)
-                ((Ambulance) agent).setHospitalLocations(hospitalLocations);
+            if (agent instanceof Ambulance) {
+                ((Ambulance) agent).setHospitalInformation(hospitalLocations, hospitalCapacities);
+            }
     }
 
     @Override
@@ -168,7 +174,7 @@ public class ThesisWorld extends World {
     }
 
     public void sendMessage(Message message) {
-        System.out.println("Messages: " + message.sender + " - " + message.getName());
+//        System.out.println("Messages: " + message.sender + " - " + message.getName());
 
         // Send the message to the receiver(s)
         for (Agent agent : this.agents)
@@ -224,7 +230,7 @@ public class ThesisWorld extends World {
         System.out.println("Time: " + this.time);
 //        printExpectedPatientsMap();
         printCurrentMap(snapshot);
-        printBeliefMap(snapshot);
+//        printBeliefMap(snapshot);
         return snapshot;
     }
 
@@ -240,7 +246,7 @@ public class ThesisWorld extends World {
                 maximalLength = Math.max(maximalLength, map[x][y].length());
             }
 
-        maximalLength = (maximalLength + 1) / 2; // roundup for division by 2
+        maximalLength = (maximalLength + 1) / stringFactor; // roundup for division by 2
 
         String horizontal = String.join("", Collections.nCopies(maximalLength, "─"));
 
@@ -250,9 +256,9 @@ public class ThesisWorld extends World {
             System.out.print("│");
             for (int x = 0; x < MAP_SIZE.getLeft(); x++) {
                 if (map[x][y] == null)
-                    System.out.print(StringUtils.repeat(" ", 2 * maximalLength));
+                    System.out.print(StringUtils.repeat(" ", stringFactor * maximalLength));
                 else
-                    System.out.print(map[x][y] + StringUtils.repeat(" ", 2 * maximalLength - map[x][y].length()));
+                    System.out.print(map[x][y] + StringUtils.repeat(" ", stringFactor * maximalLength - map[x][y].length()));
                 System.out.print("│");
             }
             System.out.println("");
@@ -284,7 +290,7 @@ public class ThesisWorld extends World {
                         maximalLength = Math.max(maximalLength, map[x][y].length());
                     }
 
-                maximalLength = (maximalLength + 1) / 2; // roundup for division by 2
+                maximalLength = (maximalLength + 1) / stringFactor; // roundup for division by 2
 
                 String horizontal = String.join("", Collections.nCopies(maximalLength, "─"));
 
@@ -294,9 +300,9 @@ public class ThesisWorld extends World {
                     System.out.print("│");
                     for (int x = 0; x < MAP_SIZE.getLeft(); x++) {
                         if (map[x][y] == null)
-                            System.out.print(StringUtils.repeat(" ", 2 * maximalLength));
+                            System.out.print(StringUtils.repeat(" ", stringFactor * maximalLength));
                         else
-                            System.out.print(map[x][y] + StringUtils.repeat(" ", 2 * maximalLength - map[x][y].length()));
+                            System.out.print(map[x][y] + StringUtils.repeat(" ", stringFactor * maximalLength - map[x][y].length()));
                         System.out.print("│");
                     }
                     System.out.println("");
@@ -329,7 +335,7 @@ public class ThesisWorld extends World {
            }
         }
 
-        maximalLength = (maximalLength + 1) / 2; // roundup for division by 2
+        maximalLength = (maximalLength + 1) / stringFactor; // roundup for division by 2
 
         String horizontal = String.join("", Collections.nCopies(maximalLength, "─"));
 
@@ -339,9 +345,9 @@ public class ThesisWorld extends World {
             System.out.print("│");
             for (int x = 0; x < MAP_SIZE.getLeft(); x++) {
                 if (map[x][y] == null)
-                    System.out.print(StringUtils.repeat(" ", 2 * maximalLength));
+                    System.out.print(StringUtils.repeat(" ", stringFactor * maximalLength));
                 else
-                    System.out.print(map[x][y] + StringUtils.repeat(" ", 2 * maximalLength - map[x][y].replaceAll("\u001B\\[[;\\d]*m", "").length()));
+                    System.out.print(map[x][y] + StringUtils.repeat(" ", stringFactor * maximalLength - map[x][y].replaceAll("\u001B\\[[;\\d]*m", "").length()));
                 System.out.print("│");
             }
             System.out.println("");

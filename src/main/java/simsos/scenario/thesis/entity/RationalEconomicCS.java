@@ -57,6 +57,7 @@ public abstract class RationalEconomicCS extends Agent {
         if (this.incomingInformation.size() > 0) {
             // Consume information from others
             consumeInformation();
+            this.incomingInformation.clear();
         }
 
         // If I have messages to respond, then set my phase as passive step (reacting to requests)
@@ -75,7 +76,6 @@ public abstract class RationalEconomicCS extends Agent {
 
         if (this.phase == Phase.ActiveImmediateStep) {
             generateActiveImmediateActions();
-            this.incomingInformation.clear();
             this.phase = Phase.PassiveImmediateStep;
         } else if (this.phase == Phase.PassiveImmediateStep) {
             generatePassiveImmediateActions();

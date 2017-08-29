@@ -1,6 +1,6 @@
 package simsos.scenario.thesis.entity;
 
-import simsos.scenario.thesis.ThesisScenario;
+import simsos.scenario.thesis.ThesisScenario.SoSType;
 import simsos.scenario.thesis.ThesisWorld;
 import simsos.scenario.thesis.util.*;
 import simsos.simulation.component.Action;
@@ -32,13 +32,13 @@ public class Ambulance extends RationalEconomicCS {
         this.reset();
     }
 
-    public void setHospitalLocations(HashMap<String, Location> hospitalLocations) {
+    public void setHospitalInformation(HashMap<String, Location> hospitalLocations, HashMap<String, Integer> hospitalCapacities) {
         this.hospitalLocations.clear();
         this.hospitalCapacities.clear();
 
         this.hospitalLocations.putAll(hospitalLocations);
-        for (String hospitalName : hospitalLocations.keySet())
-            this.hospitalCapacities.put(hospitalName, new TimedValue<Integer>(0, -1));
+        for (Map.Entry<String, Integer> entry : hospitalCapacities.entrySet())
+            this.hospitalCapacities.put(entry.getKey(), new TimedValue<Integer>(0, entry.getValue()));
     }
 
     @Override
@@ -61,13 +61,24 @@ public class Ambulance extends RationalEconomicCS {
 
     @Override
     protected void consumeInformation() {
+//        System.out.println(">> " + this.getName() + "'s capacity belief");
+//        for (String hospitalName : this.hospitalCapacities.keySet()) {
+//            System.out.println(">> " + hospitalName + ": Location " + this.hospitalLocations.get(hospitalName) + ", Capacity " + this.hospitalCapacities.get(hospitalName));
+//        }
+
         for (Message message : this.incomingInformation) {
             // Capacity response from hospitals at this location
             if (message.sender.startsWith("Hospital") && message.purpose == Message.Purpose.Response && message.data.containsKey("Capacity")) {
                 this.hospitalCapacities.get(message.sender).updateValue((TimedValue) message.data.get("Capacity"));
+            } else if (message.sender.startsWith("Ambulance") && message.purpose == Message.Purpose.Delivery && message.data.containsKey("HospitalCapacityBelief")) {
+                LinkedHashMap<String, TimedValue<Integer>> othersBelief = (LinkedHashMap<String, TimedValue<Integer>>) message.data.get("HospitalCapacityBelief");
+
+                for (Map.Entry<String, TimedValue<Integer>> entry : othersBelief.entrySet())
+                    this.hospitalCapacities.get(entry.getKey()).updateValue(entry.getValue());
             }
         }
 
+        System.out.println(">> " + this.getName() + "'s capacity belief");
         for (String hospitalName : this.hospitalCapacities.keySet()) {
             System.out.println(">> " + hospitalName + ": Location " + this.hospitalLocations.get(hospitalName) + ", Capacity " + this.hospitalCapacities.get(hospitalName));
         }
@@ -75,7 +86,8 @@ public class Ambulance extends RationalEconomicCS {
 
     @Override
     protected void generateActiveImmediateActions() {
-        switch ((ThesisScenario.SoSType) this.world.getResources().get("Type")) {
+        // Request hospital capacity
+        switch ((SoSType) this.world.getResources().get("Type")) {
             default:
                 Message capacityRequest = new Message();
                 capacityRequest.name = "Request hospital capacity";
@@ -86,6 +98,22 @@ public class Ambulance extends RationalEconomicCS {
                 capacityRequest.data.put("Capacity", null);
 
                 this.immediateActionList.add(new ABCItem(new SendMessage(capacityRequest), 10, 1));
+        }
+
+        // Share hospital capacity
+        switch ((SoSType) this.world.getResources().get("Type")) {
+            case Acknowledged:
+            case Collaborative:
+                Message beliefShare = new Message();
+                beliefShare.name = "Share hospital capacity belief";
+                beliefShare.sender = this.getName();
+                beliefShare.receiver = "Ambulance";
+                beliefShare.location = this.location;
+                beliefShare.purpose = Message.Purpose.Delivery;
+                beliefShare.data.put("HospitalCapacityBelief", this.hospitalCapacities);
+
+                this.immediateActionList.add(new ABCItem(new SendMessage(beliefShare), 0, 0));
+                break;
         }
 //        if (this.transportPatient == null) {
 //            // I-RequestHospitalCapacity
@@ -122,7 +150,35 @@ public class Ambulance extends RationalEconomicCS {
 
     @Override
     protected void generateNormalActions() {
+        // N-Directed Moves
+        if (this.world.getResources().get("Type") == SoSType.Directed) {
 
+        }
+
+        // N-Autonomous Moves
+        if (this.world.getResources().get("Type") != SoSType.Directed) {
+            // Random search
+            if (Ambulance.this.location.getX() > 0 && lastDirection != Direction.RIGHT)
+                normalActionList.add(new ABCItem(new Move(Direction.LEFT), 0, calculateMoveCost(-1, 0)));
+            if (Ambulance.this.location.getX() < ThesisWorld.MAP_SIZE.getLeft() - 1 && lastDirection != Direction.LEFT)
+                normalActionList.add(new ABCItem(new Move(Direction.RIGHT), 0, calculateMoveCost(1, 0)));
+            if (Ambulance.this.location.getY() > 0 && lastDirection != Direction.DOWN)
+                normalActionList.add(new ABCItem(new Move(Direction.UP), 0, calculateMoveCost(0, -1)));
+            if (Ambulance.this.location.getY() < ThesisWorld.MAP_SIZE.getRight() - 1 && lastDirection != Direction.UP)
+                normalActionList.add(new ABCItem(new Move(Direction.DOWN), 0, calculateMoveCost(0, 1)));
+        }
+    }
+
+    public int calculateMoveCost(int deltaX, int deltaY) {
+        Location nextLocation = this.location.add(deltaX, deltaY);
+        // Uncertainty
+        int totalCost = this.world.random.nextInt(2);
+
+        // Belief cost
+        totalCost += this.patientsBeliefMap.getValue(nextLocation.getX(), nextLocation.getY()).size();
+        totalCost -= this.expectedPatientsMap.getValue(nextLocation.getX(), nextLocation.getY());
+
+        return totalCost;
     }
 
     @Override
@@ -199,4 +255,40 @@ public class Ambulance extends RationalEconomicCS {
 //
 //        return list;
 //    }
+    protected class Move extends Action {
+        Direction direction = Direction.NONE;
+
+        public Move(Direction direction) {
+            super(1);
+
+            this.direction = direction;
+        }
+
+        @Override
+        public void execute() {
+            switch (this.direction) {
+                case LEFT:
+                    Ambulance.this.location.moveX(-1);
+                    break;
+                case RIGHT:
+                    Ambulance.this.location.moveX(1);
+                    break;
+                case UP:
+                    Ambulance.this.location.moveY(-1);
+                    break;
+                case DOWN:
+                    Ambulance.this.location.moveY(1);
+                    break;
+                default:
+                    System.out.println("FireFighter: Move Error"); // Error
+            }
+
+            Ambulance.this.lastDirection = this.direction;
+        }
+
+        @Override
+        public String getName() {
+            return null;
+        }
+    }
 }

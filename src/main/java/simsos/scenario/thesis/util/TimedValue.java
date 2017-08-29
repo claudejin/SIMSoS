@@ -47,6 +47,6 @@ public class TimedValue<T> implements Comparable {
         if (value == null)
             return "null";
         else
-            return value.toString();
+            return value.toString() + "(Time: " + this.timestamp + ")";
     }
 }
