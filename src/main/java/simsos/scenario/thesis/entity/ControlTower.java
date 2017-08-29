@@ -39,11 +39,6 @@ public class ControlTower extends RationalEconomicCS {
     @Override
     protected void consumeInformation() {
         for (Message message : this.incomingInformation) {
-            // Location report from FireFighters
-            if (message.sender.startsWith("FireFighter") && message.purpose == Message.Purpose.Response && message.data.containsKey("Location")) {
-
-            }
-
             // Discovery report from FireFighters
             if (message.sender.startsWith("FireFighter") && message.purpose == Message.Purpose.Response && message.data.containsKey("Discovered")) {
                 if (message.data.get("Discovered") != null) {

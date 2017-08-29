@@ -13,8 +13,6 @@ public class FireFighter extends RationalEconomicCS {
     Maptrix<Integer> expectedPatientsMap = (Maptrix<Integer>) this.world.getResources().get("ExpectedPatientsMap");
     Maptrix<HashSet> beliefMap = new Maptrix<HashSet>(HashSet.class, ThesisWorld.MAP_SIZE.getLeft(), ThesisWorld.MAP_SIZE.getRight());
 
-//    private Location headingLocation = ((ThesisWorld) world).getRandomPatientLocation();
-
     private Location location;
 
     private enum Direction {NONE, LEFT, RIGHT, UP, DOWN}
@@ -135,9 +133,6 @@ public class FireFighter extends RationalEconomicCS {
 
         // N-Autonomous Moves
         if (this.world.getResources().get("Type") != SoSType.Directed) {
-//                if (this.location.equals(this.headingLocation))
-//                    updateHeadingLocation();
-
             if (FireFighter.this.location.getX() > 0 && lastDirection != Direction.RIGHT)
                 normalActionList.add(new ABCItem(new Move(Direction.LEFT), 0, calculateMoveCost(-1, 0)));
             if (FireFighter.this.location.getX() < ThesisWorld.MAP_SIZE.getLeft() - 1 && lastDirection != Direction.LEFT)
@@ -155,28 +150,18 @@ public class FireFighter extends RationalEconomicCS {
         // Uncertainty
         int totalCost = this.world.random.nextInt(2);
 
-//        // Distance cost
-//        totalCost += nextLocation.distanceTo(this.headingLocation);
-
-//        // Belief cost
+        // Belief cost
         totalCost += this.beliefMap.getValue(nextLocation.getX(), nextLocation.getY()).size();
         totalCost -= this.expectedPatientsMap.getValue(nextLocation.getX(), nextLocation.getY());
 
         return totalCost;
     }
 
-//    private void updateHeadingLocation() {
-//        while (this.location.equals(this.headingLocation))
-//            this.headingLocation = ((ThesisWorld) world).getRandomPatientLocation();
-//    }
-
     @Override
     public void reset() {
         this.beliefMap.reset();
 
         this.location = new Location(ThesisWorld.MAP_SIZE.getLeft() / 2, ThesisWorld.MAP_SIZE.getRight() / 2);
-//        this.location = new Location(0, 0);
-//        updateHeadingLocation();
     }
 
     @Override
