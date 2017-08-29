@@ -4,6 +4,7 @@ import simsos.scenario.thesis.entity.Ambulance;
 import simsos.scenario.thesis.entity.ControlTower;
 import simsos.scenario.thesis.entity.FireFighter;
 import simsos.scenario.thesis.entity.Hospital;
+import simsos.scenario.thesis.util.Location;
 import simsos.simulation.component.Scenario;
 
 public class ThesisScenario extends Scenario {
@@ -19,7 +20,7 @@ public class ThesisScenario extends Scenario {
         for (int i = 1; i <= nAmbulance; i++)
             this.world.addAgent(new Ambulance(this.world, "Ambulance" + i));
         for (int i = 1; i <= nHospital; i++)
-            this.world.addAgent(new Hospital(this.world, "Hospital" + i));
+            this.world.addAgent(new Hospital(this.world, "Hospital" + i, new Location(ThesisWorld.MAP_SIZE.getLeft() / 2, ThesisWorld.MAP_SIZE.getRight() / 2), 30));
 
         this.checker = null;
     }

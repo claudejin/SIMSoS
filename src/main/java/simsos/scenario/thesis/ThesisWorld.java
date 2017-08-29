@@ -3,6 +3,7 @@ package simsos.scenario.thesis;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.math3.distribution.NormalDistribution;
 import simsos.scenario.thesis.ThesisScenario.SoSType;
+import simsos.scenario.thesis.entity.Ambulance;
 import simsos.scenario.thesis.entity.FireFighter;
 import simsos.scenario.thesis.entity.Hospital;
 import simsos.scenario.thesis.entity.RationalEconomicCS;
@@ -71,6 +72,15 @@ public class ThesisWorld extends World {
             patientsMap.getValue(patient.getLocation()).add(patient);
         }
         generateExpectedPatientsMap();
+
+        HashMap<String, Location> hospitalLocations = new HashMap<String, Location>();
+        for (Agent agent : this.agents)
+            if (agent instanceof Hospital)
+                hospitalLocations.put(agent.getName(), (Location) agent.getProperties().get("Location"));
+
+        for (Agent agent : this.agents)
+            if (agent instanceof Ambulance)
+                ((Ambulance) agent).setHospitalLocations(hospitalLocations);
     }
 
     @Override
@@ -158,7 +168,7 @@ public class ThesisWorld extends World {
     }
 
     public void sendMessage(Message message) {
-//        System.out.println("Messages: " + message.sender + " - " + message.getName());
+        System.out.println("Messages: " + message.sender + " - " + message.getName());
 
         // Send the message to the receiver(s)
         for (Agent agent : this.agents)
@@ -211,10 +221,10 @@ public class ThesisWorld extends World {
         for (Patient patient : this.patients)
             snapshot.addProperty(patient, "Location", patient.getLocation());
 
-//        System.out.println("Time: " + this.time);
+        System.out.println("Time: " + this.time);
 //        printExpectedPatientsMap();
-//        printCurrentMap(snapshot);
-//        printBeliefMap(snapshot);
+        printCurrentMap(snapshot);
+        printBeliefMap(snapshot);
         return snapshot;
     }
 
@@ -267,7 +277,10 @@ public class ThesisWorld extends World {
 
                 for (int x = 0; x < MAP_SIZE.getLeft(); x++)
                     for (int y = 0; y < MAP_SIZE.getRight(); y++) {
-                        map[x][y] = "" + beliefMap.getValue(x, y).size();
+                        if (pv.propertyName.equals("PatientsBeliefMap"))
+                            map[x][y] = "" + ((TimedValue) beliefMap.getValue(x, y)).toString();
+                        else
+                            map[x][y] = "" + beliefMap.getValue(x, y).size();
                         maximalLength = Math.max(maximalLength, map[x][y].length());
                     }
 

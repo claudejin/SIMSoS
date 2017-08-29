@@ -22,6 +22,15 @@ public class Location implements Cloneable {
         return this.y;
     }
 
+    public void setLocation(int x, int y) {
+        this.x = x;
+        this.y = y;
+    }
+
+    public void setLocation(Location location) {
+        this.setLocation(location.getX(), location.getY());
+    }
+
     public Location move(int transX, int transY) {
         moveX(transX);
         moveY(transY);

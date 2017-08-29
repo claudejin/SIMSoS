@@ -30,22 +30,31 @@ public class SIMSoS {
             }
         }
 
-        SoSType sostype = SoSType.Collaborative;
+        SoSType sostype = SoSType.Virtual;
 
-        Scenario scenario = new ThesisScenario(sostype, 32, 1, 0, 1);
+        Scenario scenario = new ThesisScenario(sostype, 32, 0, 1, 2);
         World world = scenario.getWorld();
 
-        for (int i = 0; i < 5000; i++) {
+        for (int i = 0; i < 1; i++) {
             ((ThesisWorld) world).setSoSType(sostype);
             Simulator.execute(world, 24);
 
             ArrayList<Patient> patients = (ArrayList<Patient>) world.getResources().get("Patients");
             int numDiscovered = 0;
-            for (Patient patient : patients)
+            int numOnTransport = 0;
+            int numHospitalized = 0;
+            for (Patient patient : patients) {
                 if (patient.getStatus() == Patient.Status.Discovered)
                     numDiscovered++;
-//            System.out.println("Discovered Rate: " + Math.round((float) numDiscovered / patients.size() * 100) + "% (" + numDiscovered + "/" + patients.size() + ")");
-            System.out.println(Math.round((float) numDiscovered / patients.size() * 100));
+                else if (patient.getStatus() == Patient.Status.OnTransport)
+                    numOnTransport++;
+                else if (patient.getStatus() == Patient.Status.Hospitalized)
+                    numHospitalized++;
+            }
+            System.out.println("Discovery Rate: " + Math.round((float) numDiscovered / patients.size() * 100) + "% (" + numDiscovered + "/" + patients.size() + ")");
+            System.out.println("OnTransport Rate: " + Math.round((float) numOnTransport / patients.size() * 100) + "% (" + numOnTransport + "/" + patients.size() + ")");
+            System.out.println("Hospitalized Rate: " + Math.round((float) numHospitalized / patients.size() * 100) + "% (" + numHospitalized + "/" + patients.size() + ")");
+//            System.out.println(Math.round((float) numDiscovered / patients.size() * 100));
         }
 
 //        PropertyChecker checker = scenario.getChecker();

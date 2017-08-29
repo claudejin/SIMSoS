@@ -24,7 +24,7 @@ public class Patient implements HasName {
     }
 
     public void reset() {
-        this.status = Status.Initial;
+        this.status = Status.Discovered;
         this.severity = this.random.nextInt(2) == 1 ? Severity.Immediate : Severity.Delayed;
         this.lifePoint = 50;
         this.location = new Location(0, 0);

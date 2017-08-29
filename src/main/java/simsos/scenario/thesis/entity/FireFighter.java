@@ -13,7 +13,7 @@ public class FireFighter extends RationalEconomicCS {
     Maptrix<Integer> expectedPatientsMap = (Maptrix<Integer>) this.world.getResources().get("ExpectedPatientsMap");
     Maptrix<HashSet> beliefMap = new Maptrix<HashSet>(HashSet.class, ThesisWorld.MAP_SIZE.getLeft(), ThesisWorld.MAP_SIZE.getRight());
 
-    private Location location;
+    private Location location = new Location(ThesisWorld.MAP_SIZE.getLeft() / 2, ThesisWorld.MAP_SIZE.getRight() / 2);;
 
     private enum Direction {NONE, LEFT, RIGHT, UP, DOWN}
     private Direction lastDirection;
@@ -95,7 +95,7 @@ public class FireFighter extends RationalEconomicCS {
                         Message locationReport = new Message();
                         locationReport.name = "Respond location report";
                         locationReport.sender = this.getName();
-                        locationReport.receiver = "ControlTower";
+                        locationReport.receiver = message.sender;
                         locationReport.purpose = Message.Purpose.Response;
                         locationReport.data.put("Location", this.location);
 
@@ -112,7 +112,7 @@ public class FireFighter extends RationalEconomicCS {
                         Message discoveryReport = new Message();
                         discoveryReport.name = "Respond discovery report";
                         discoveryReport.sender = this.getName();
-                        discoveryReport.receiver = "ControlTower";
+                        discoveryReport.receiver = message.sender;
                         discoveryReport.purpose = Message.Purpose.Response;
                         discoveryReport.data.put("Discovered", this.discoveredPatient);
                         discoveryReport.data.put("Location", this.discoveredPatient != null ? new Location(this.discoveredPatient.getLocation()) : null);
@@ -161,7 +161,10 @@ public class FireFighter extends RationalEconomicCS {
     public void reset() {
         this.beliefMap.reset();
 
-        this.location = new Location(ThesisWorld.MAP_SIZE.getLeft() / 2, ThesisWorld.MAP_SIZE.getRight() / 2);
+        this.location.setLocation(ThesisWorld.MAP_SIZE.getLeft() / 2, ThesisWorld.MAP_SIZE.getRight() / 2);
+
+        this.lastDirection = Direction.NONE;
+        this.discoveredPatient = null;
     }
 
     @Override
