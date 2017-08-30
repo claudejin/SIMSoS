@@ -32,7 +32,7 @@ public class SIMSoS {
 
         SoSType sostype = SoSType.Virtual;
 
-        Scenario scenario = new ThesisScenario(sostype, 32, 0, 3, 2);
+        Scenario scenario = new ThesisScenario(sostype, 32, 0, 1, 2);
         World world = scenario.getWorld();
 
         for (int i = 0; i < 1; i++) {

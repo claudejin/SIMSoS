@@ -40,10 +40,10 @@ public class ThesisWorld extends World {
 
     public ArrayList<Patient> patients = new ArrayList<Patient>();
 
-    private static int stringFactor = 1;
+    private static int stringFactor = 2;
 
     public ThesisWorld(SoSType type, int nPatient) {
-        super(new Random().nextLong());
+        super(1);
 
         this.setSoSType(type);
         this.nPatient = nPatient;
@@ -174,7 +174,7 @@ public class ThesisWorld extends World {
     }
 
     public void sendMessage(Message message) {
-//        System.out.println("Messages: " + message.sender + " - " + message.getName());
+        System.out.println("Messages: " + message.sender + " - " + message.getName());
 
         // Send the message to the receiver(s)
         for (Agent agent : this.agents)
@@ -327,6 +327,10 @@ public class ThesisWorld extends World {
                if (pv.subject instanceof Patient)
                    if (((Patient) pv.subject).getStatus() == Patient.Status.Discovered)
                        map[location.getX()][location.getY()] += ANSI_RED + pv.subject.getSymbol() + ANSI_RESET;
+                   else if (((Patient) pv.subject).getStatus() == Patient.Status.OnTransport)
+                       map[location.getX()][location.getY()] += ANSI_BLUE + pv.subject.getSymbol() + ANSI_RESET;
+                   else if (((Patient) pv.subject).getStatus() == Patient.Status.Hospitalized)
+                       map[location.getX()][location.getY()] += ANSI_GREEN + pv.subject.getSymbol() + ANSI_RESET;
                    else
                        map[location.getX()][location.getY()] += pv.subject.getSymbol();
                else

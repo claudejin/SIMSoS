@@ -6,7 +6,7 @@ public class TimedValue<T> implements Comparable {
 
     public TimedValue() {
         this.timestamp = 0;
-        this.value = null;;
+        this.value = (T) new Object();
     }
 
     public TimedValue(long timestamp, T value) {

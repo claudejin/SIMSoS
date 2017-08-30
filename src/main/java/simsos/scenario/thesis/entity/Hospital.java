@@ -2,10 +2,7 @@ package simsos.scenario.thesis.entity;
 
 import simsos.scenario.thesis.ThesisScenario;
 import simsos.scenario.thesis.ThesisWorld;
-import simsos.scenario.thesis.util.ABCItem;
-import simsos.scenario.thesis.util.Location;
-import simsos.scenario.thesis.util.Message;
-import simsos.scenario.thesis.util.TimedValue;
+import simsos.scenario.thesis.util.*;
 import simsos.simulation.component.Action;
 import simsos.simulation.component.Agent;
 import simsos.simulation.component.World;
@@ -66,7 +63,7 @@ public class Hospital extends RationalEconomicCS {
     @Override
     protected void generatePassiveImmediateActions() {
         for (Message message : this.incomingRequests) {
-            // I-ReportLocation
+            // I-ReportCapacity
             if (message.sender.startsWith("Ambulance") && message.purpose == Message.Purpose.ReqInfo && message.data.containsKey("Capacity")) {
                 switch ((ThesisScenario.SoSType) this.world.getResources().get("Type")) {
                     default:
@@ -77,8 +74,31 @@ public class Hospital extends RationalEconomicCS {
                         locationReport.purpose = Message.Purpose.Response;
                         locationReport.data.put("Capacity", new TimedValue<Integer>(this.world.getTime(), this.capacity));
 
-                        this.immediateActionList.add(new ABCItem(new SendMessage(locationReport), 0, 0));
+                        this.immediateActionList.add(new ABCItem(new SendMessage(locationReport), 0, 1));
                         break;
+                }
+
+            // Request Hospitalizing
+            } else if (message.sender.startsWith("Ambulance") && message.purpose == Message.Purpose.ReqAction && message.data.containsKey("Patient")) {
+                switch ((ThesisScenario.SoSType) this.world.getResources().get("Type")) {
+                    default:
+                        boolean isHospitalized = false;
+                        if (this.capacity > 0) {
+                            this.capacity--;
+                            Patient patient = (Patient) message.data.get("Patient");
+                            patient.setStatus(Patient.Status.Hospitalized);
+                            patient.setLocation(this.location);
+                            isHospitalized = true;
+                        }
+
+                        Message hospitalizePatient = new Message();
+                        hospitalizePatient.name = "Respond hospitalizing the patient";
+                        hospitalizePatient.sender = this.getName();
+                        hospitalizePatient.receiver = message.sender;
+                        hospitalizePatient.purpose = Message.Purpose.Response;
+                        hospitalizePatient.data.put("Hospitalized", isHospitalized);
+
+                        this.immediateActionList.add(new ABCItem(new SendMessage(hospitalizePatient), 3, 1));
                 }
             }
         }
