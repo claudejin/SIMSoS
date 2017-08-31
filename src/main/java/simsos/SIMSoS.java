@@ -33,7 +33,7 @@ public class SIMSoS {
 
         SoSType sostype = SoSType.Collaborative;
 
-        Scenario scenario = new ThesisScenario(sostype, 32, 1, 1, 1);
+        Scenario scenario = new ThesisScenario(sostype, 32, 3, 3, 1);
         World world = scenario.getWorld();
 
         for (int i = 0; i < 5000; i++) {
@@ -57,7 +57,7 @@ public class SIMSoS {
 //            System.out.println(Math.round((float) numDiscovered / patients.size() * 100));
 //            System.out.println("OnTransport Rate: " + Math.round((float) numOnTransport / patients.size() * 100) + "% (" + numOnTransport + "/" + patients.size() + ")");
 //            System.out.println("Hospitalized Rate: " + Math.round((float) numHospitalized / patients.size() * 100) + "% (" + numHospitalized + "/" + patients.size() + ")");
-            System.out.println(Math.round((float) numHospitalized / patients.size() * 100));
+            System.out.println(Math.round((float) (numDiscovered+numOnTransport+numHospitalized) / patients.size() * 100) + "," + Math.round((float) numHospitalized / patients.size() * 100));
         }
 
 //        PropertyChecker checker = scenario.getChecker();

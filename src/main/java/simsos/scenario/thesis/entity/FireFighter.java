@@ -33,16 +33,6 @@ public class FireFighter extends RationalEconomicCS {
         Set<Patient> localBelief = this.beliefMap.getValue(this.location);
         Set<Patient> discoveredPatients = ((ThesisWorld) this.world).getDiscoveredPatients(this.location);
         localBelief.addAll(discoveredPatients);
-
-//        // FireFighter observe global location and update already discovered patients
-//        Set<Patient> localBelief = null;
-//        Set<Patient> discoveredPatients = null;
-//        for (int x = 0; x < ThesisWorld.MAP_SIZE.getLeft(); x++)
-//            for (int y = 0; y < ThesisWorld.MAP_SIZE.getRight(); y++) {
-//                localBelief = this.beliefMap.getValue(x, y);
-//                discoveredPatients = ((ThesisWorld) this.world).getDiscoveredPatients(new Location(x, y));
-//                localBelief.addAll(discoveredPatients);
-//            }
     }
 
     @Override

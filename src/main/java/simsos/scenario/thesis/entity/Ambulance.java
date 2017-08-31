@@ -10,8 +10,6 @@ import java.util.*;
 
 public class Ambulance extends RationalEconomicCS {
 
-    Maptrix<Integer> expectedPatientsMap = (Maptrix<Integer>) this.world.getResources().get("ExpectedPatientsMap");
-    Maptrix<TimedValue> discoveredBeliefMap = new Maptrix<TimedValue>(TimedValue.class, ThesisWorld.MAP_SIZE.getLeft(), ThesisWorld.MAP_SIZE.getRight());
     Maptrix<TimedValue> awaitBeliefMap = new Maptrix<TimedValue>(TimedValue.class, ThesisWorld.MAP_SIZE.getLeft(), ThesisWorld.MAP_SIZE.getRight());
 
     LinkedHashMap<String, Location> hospitalLocations = new LinkedHashMap<String, Location>();
@@ -49,32 +47,14 @@ public class Ambulance extends RationalEconomicCS {
     @Override
     protected void observeEnvironment() {
         // FireFighter observe current location and update already discovered patients
-        TimedValue<HashSet> localDiscoveredBelief = this.discoveredBeliefMap.getValue(this.location);
         TimedValue<Integer> localAwaitBelief = this.awaitBeliefMap.getValue(this.location);
 
         Set<Patient> discoveredPatients = ((ThesisWorld) this.world).getDiscoveredPatients(this.location);
-        localDiscoveredBelief.getValue().addAll(discoveredPatients);
-        localDiscoveredBelief.updateValue(new TimedValue<HashSet>(this.world.getTime(), localDiscoveredBelief.getValue()));
         localAwaitBelief.updateValue(new TimedValue<Integer>(this.world.getTime(), discoveredPatients.size()));
-
-//        // FireFighter observe global location and update already discovered patients
-//        Set<Patient> localBelief = null;
-//        Set<Patient> discoveredPatients = null;
-//        for (int x = 0; x < ThesisWorld.MAP_SIZE.getLeft(); x++)
-//            for (int y = 0; y < ThesisWorld.MAP_SIZE.getRight(); y++) {
-//                localBelief = this.beliefMap.getValue(x, y);
-//                discoveredPatients = ((ThesisWorld) this.world).getDiscoveredPatients(new Location(x, y));
-//                localBelief.addAll(discoveredPatients);
-//            }
     }
 
     @Override
     protected void consumeInformation() {
-//        System.out.println(">> " + this.getName() + "'s capacity belief");
-//        for (String hospitalName : this.hospitalCapacities.keySet()) {
-//            System.out.println(">> " + hospitalName + ": Location " + this.hospitalLocations.get(hospitalName) + ", Capacity " + this.hospitalCapacities.get(hospitalName));
-//        }
-
         for (Message message : this.incomingInformation) {
             // Capacity response from hospitals at this location
             if (message.sender.startsWith("Hospital") && message.purpose == Message.Purpose.Response && message.data.containsKey("Capacity")) {
@@ -96,18 +76,14 @@ public class Ambulance extends RationalEconomicCS {
             // Capacity belief and Await belief, shared from other ambulances at this location
             } else if (message.sender.startsWith("Ambulance") && message.purpose == Message.Purpose.Delivery && message.data.containsKey("HospitalCapacityBelief")) {
                 LinkedHashMap<String, TimedValue<Integer>> othersCapacityBelief = (LinkedHashMap<String, TimedValue<Integer>>) message.data.get("HospitalCapacityBelief");
-                Maptrix<TimedValue<HashSet>> othersDiscoveryBeliefMap = (Maptrix<TimedValue<HashSet>>) message.data.get("DiscoveryBeliefMap");
                 Maptrix<TimedValue<Integer>> othersAwaitBeliefMap = (Maptrix<TimedValue<Integer>>) message.data.get("AwaitBeliefMap");
 
                 for (Map.Entry<String, TimedValue<Integer>> entry : othersCapacityBelief.entrySet())
                     this.hospitalCapacities.get(entry.getKey()).updateValue(entry.getValue());
 
                 for (int x = 0; x < ThesisWorld.MAP_SIZE.getLeft(); x++)
-                    for (int y = 0; y < ThesisWorld.MAP_SIZE.getRight(); y++) {
-                        ((HashSet) this.discoveredBeliefMap.getValue(x, y).getValue()).addAll(othersDiscoveryBeliefMap.getValue(x, y).getValue());
-                        this.discoveredBeliefMap.getValue(x, y).updateValue(new TimedValue(this.world.getTime(), this.discoveredBeliefMap.getValue(x, y).getValue()));
+                    for (int y = 0; y < ThesisWorld.MAP_SIZE.getRight(); y++)
                         this.awaitBeliefMap.getValue(x, y).updateValue(othersAwaitBeliefMap.getValue(x, y));
-                    }
 
             // Patient set request from ControlTower
             } else if (message.sender.equals("ControlTower") && message.purpose == Message.Purpose.ReqAction && message.data.containsKey("Patient")) {
@@ -117,11 +93,6 @@ public class Ambulance extends RationalEconomicCS {
 //                this.immediateActionList.add(new ABCItem(new SetTargetPatient(some patient), 11, 0));
             }
         }
-
-//        System.out.println(">> " + this.getName() + "'s capacity belief");
-//        for (String hospitalName : this.hospitalCapacities.keySet()) {
-//            System.out.println(">> " + hospitalName + ": Location " + this.hospitalLocations.get(hospitalName) + ", Capacity " + this.hospitalCapacities.get(hospitalName));
-//        }
     }
 
     @Override
@@ -151,7 +122,6 @@ public class Ambulance extends RationalEconomicCS {
                 beliefShare.location = this.location;
                 beliefShare.purpose = Message.Purpose.Delivery;
                 beliefShare.data.put("HospitalCapacityBelief", this.hospitalCapacities);
-                beliefShare.data.put("DiscoveryBeliefMap", this.discoveredBeliefMap);
                 beliefShare.data.put("AwaitBeliefMap", this.awaitBeliefMap);
 
                 this.immediateActionList.add(new ABCItem(new SendMessage(beliefShare), 9, 1));
@@ -250,56 +220,20 @@ public class Ambulance extends RationalEconomicCS {
             deltaX = 0; deltaY = 1;
         }
 
-        if (this.headingLocation == null) {
+        if (this.headingLocation == null)
             // Belief cost
-
-//            int x1, x2, y1, y2;
-//            if (direction == Direction.LEFT) {
-//                x1 = 0;
-//                x2 = this.location.getX();
-//                y1 = 0;
-//                y2 = ThesisWorld.MAP_SIZE.getRight();
-//            } else if (direction == Direction.RIGHT) {
-//                x1 = this.location.getX() + 1;
-//                x2 = ThesisWorld.MAP_SIZE.getLeft();
-//                y1 = 0;
-//                y2 = ThesisWorld.MAP_SIZE.getRight();
-//            } else if (direction == Direction.UP) {
-//                x1 = 0;
-//                x2 = ThesisWorld.MAP_SIZE.getLeft();
-//                y1 = 0;
-//                y2 = this.location.getY();
-//            } else {
-//                x1 = 0;
-//                x2 = ThesisWorld.MAP_SIZE.getLeft();
-//                y1 = this.location.getY() + 1;
-//                y2 = ThesisWorld.MAP_SIZE.getRight();
-//            }
-
             totalCost -= (Integer) this.awaitBeliefMap.getValue(this.location.add(deltaX, deltaY)).getValue(); // Awaiting
-//            totalCost -= this.expectedPatientsMap.getValue(this.location.add(deltaX, deltaY)); // Expected
-//            for (int x = x1; x < x2; x++)
-//                for (int y = y1; y < y2; y++) {
-////                    totalCost += ((HashSet) this.discoveredBeliefMap.getValue(x, y).getValue()).size(); // Already discovered
-////                    totalCost -= this.expectedPatientsMap.getValue(x, y); // Expected
-//                    totalCost -= (Integer) this.awaitBeliefMap.getValue(x, y).getValue(); // Awaiting
-//                }
-        } else {
-
+        else
             totalCost += this.headingLocation.distanceTo(this.location.add(deltaX, deltaY));
-        }
 
         return totalCost;
     }
 
     @Override
     public void reset() {
-        this.discoveredBeliefMap.reset();
         for (int x = 0; x < ThesisWorld.MAP_SIZE.getLeft(); x++)
-            for (int y = 0; y < ThesisWorld.MAP_SIZE.getRight(); y++) {
-                this.discoveredBeliefMap.setValue(x, y, new TimedValue<HashSet>(0, new HashSet<Patient>()));
+            for (int y = 0; y < ThesisWorld.MAP_SIZE.getRight(); y++)
                 this.awaitBeliefMap.setValue(x, y, new TimedValue<Integer>(0, 0));
-            }
 
         this.lastDirection = Direction.NONE;
         this.location = new Location(this.initialLocation);
@@ -322,7 +256,6 @@ public class Ambulance extends RationalEconomicCS {
     public HashMap<String, Object> getProperties() {
         HashMap<String, Object> properties = new HashMap<String, Object>();
         properties.put("Location", this.location);
-        properties.put("DiscoveryBeliefMap", this.discoveredBeliefMap);
         properties.put("AwaitBeliefMap", this.awaitBeliefMap);
         return properties;
     }
