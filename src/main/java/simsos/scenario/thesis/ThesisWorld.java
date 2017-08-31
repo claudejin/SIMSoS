@@ -174,7 +174,7 @@ public class ThesisWorld extends World {
     }
 
     public void sendMessage(Message message) {
-        System.out.println("Messages: " + message.sender + " - " + message.getName());
+//        System.out.println("Messages: " + message.sender + " - " + message.getName());
 
         // Send the message to the receiver(s)
         for (Agent agent : this.agents)
@@ -227,9 +227,9 @@ public class ThesisWorld extends World {
         for (Patient patient : this.patients)
             snapshot.addProperty(patient, "Location", patient.getLocation());
 
-        System.out.println("Time: " + this.time);
+//        System.out.println("Time: " + this.time);
 //        printExpectedPatientsMap();
-        printCurrentMap(snapshot);
+//        printCurrentMap(snapshot);
 //        printBeliefMap(snapshot);
         return snapshot;
     }
@@ -283,8 +283,10 @@ public class ThesisWorld extends World {
 
                 for (int x = 0; x < MAP_SIZE.getLeft(); x++)
                     for (int y = 0; y < MAP_SIZE.getRight(); y++) {
-                        if (pv.propertyName.equals("PatientsBeliefMap"))
+                        if (pv.propertyName.equals("PatientsBeliefMap") || pv.propertyName.equals("AwaitBeliefMap") )
                             map[x][y] = "" + ((TimedValue) beliefMap.getValue(x, y)).toString();
+                        else if (pv.propertyName.equals("DiscoveryBeliefMap"))
+                            map[x][y] = "" + ((TimedValue<HashSet>) beliefMap.getValue(x, y)).getValue().size();
                         else
                             map[x][y] = "" + beliefMap.getValue(x, y).size();
                         maximalLength = Math.max(maximalLength, map[x][y].length());
@@ -317,7 +319,8 @@ public class ThesisWorld extends World {
     private void printCurrentMap(Snapshot snapshot) {
         ArrayList<PropertyValue> prop = snapshot.getProperties();
         String [][] map = new String[MAP_SIZE.getLeft()][MAP_SIZE.getRight()];
-        int maximalLength = 0;
+        int[] maximalLength = new int[Math.max(MAP_SIZE.getLeft(), MAP_SIZE.getRight())];
+
         for (PropertyValue pv : prop) {
            if (pv.propertyName.equals("Location")) {
 //               System.out.println(pv.subjectName + ": " + pv.value.toString());
@@ -335,31 +338,40 @@ public class ThesisWorld extends World {
                        map[location.getX()][location.getY()] += pv.subject.getSymbol();
                else
                    map[location.getX()][location.getY()] += pv.subject.getSymbol();
-               maximalLength = Math.max(maximalLength, map[location.getX()][location.getY()].replaceAll("\u001B\\[[;\\d]*m", "").length());
+               maximalLength[location.getX()] = Math.max(maximalLength[location.getX()], map[location.getX()][location.getY()].replaceAll("\u001B\\[[;\\d]*m", "").length());
            }
         }
 
-        maximalLength = (maximalLength + 1) / stringFactor; // roundup for division by 2
+//        maximalLength = (maximalLength + 1) / stringFactor; // roundup for division by 2
 
-        String horizontal = String.join("", Collections.nCopies(maximalLength, "─"));
-
-        System.out.println("┌" + String.join("┬", Collections.nCopies(MAP_SIZE.getLeft(), horizontal)) + "┐");
+        System.out.print("┌");
+        for (int x = 0; x < MAP_SIZE.getLeft() - 1; x++)
+            System.out.print(String.join("", Collections.nCopies((maximalLength[x] + 1) / stringFactor, "─")) + "┬");
+        System.out.println(String.join("", Collections.nCopies((maximalLength[MAP_SIZE.getLeft() - 1] + 1) / stringFactor, "─")) + "┐");
 
         for (int y = 0; y < MAP_SIZE.getRight(); y++) {
             System.out.print("│");
             for (int x = 0; x < MAP_SIZE.getLeft(); x++) {
                 if (map[x][y] == null)
-                    System.out.print(StringUtils.repeat(" ", stringFactor * maximalLength));
+                    System.out.print(StringUtils.repeat(" ", (maximalLength[x] + 1) / stringFactor * stringFactor));
                 else
-                    System.out.print(map[x][y] + StringUtils.repeat(" ", stringFactor * maximalLength - map[x][y].replaceAll("\u001B\\[[;\\d]*m", "").length()));
+                    System.out.print(map[x][y] + StringUtils.repeat(" ", (maximalLength[x] + 1) / stringFactor * stringFactor - map[x][y].replaceAll("\u001B\\[[;\\d]*m", "").length()));
                 System.out.print("│");
             }
             System.out.println("");
-            if (y < MAP_SIZE.getRight() - 1)
-                System.out.println("├" + String.join("┼", Collections.nCopies(MAP_SIZE.getLeft(), horizontal)) + "┤");
+
+            if (y < MAP_SIZE.getRight() - 1) {
+                System.out.print("├");
+                for (int x = 0; x < MAP_SIZE.getLeft() - 1; x++)
+                    System.out.print(String.join("", Collections.nCopies((maximalLength[x] + 1) / stringFactor, "─")) + "┼");
+                System.out.println(String.join("", Collections.nCopies((maximalLength[MAP_SIZE.getLeft() - 1] + 1) / stringFactor, "─")) + "┤");
+            }
         }
 
-        System.out.println("└" + String.join("┴", Collections.nCopies(MAP_SIZE.getLeft(), horizontal)) + "┘");
+        System.out.print("└");
+        for (int x = 0; x < MAP_SIZE.getLeft() - 1; x++)
+            System.out.print(String.join("", Collections.nCopies((maximalLength[x] + 1) / stringFactor, "─")) + "┴");
+        System.out.println(String.join("", Collections.nCopies((maximalLength[MAP_SIZE.getLeft() - 1] + 1) / stringFactor, "─")) + "┘");
     }
 
     public Set<Patient> getDiscoveredPatients(Location location) {

@@ -18,11 +18,14 @@ public class ThesisScenario extends Scenario {
         for (int i = 1; i <= nFireFighter; i++)
             this.world.addAgent(new FireFighter(this.world, "FireFighter" + i));
         for (int i = 1; i <= nAmbulance; i++)
-            this.world.addAgent(new Ambulance(this.world, "Ambulance" + i));
-//        for (int i = 1; i <= nHospital; i++)
-//            this.world.addAgent(new Hospital(this.world, "Hospital" + i, new Location(ThesisWorld.MAP_SIZE.getLeft() / 2, ThesisWorld.MAP_SIZE.getRight() / 2), 30));
-        this.world.addAgent(new Hospital(this.world, "Hospital1", new Location(ThesisWorld.MAP_SIZE.getLeft() / 2-2, ThesisWorld.MAP_SIZE.getRight() / 2-2), 30));
-        this.world.addAgent(new Hospital(this.world, "Hospital2", new Location(ThesisWorld.MAP_SIZE.getLeft() / 2+1, ThesisWorld.MAP_SIZE.getRight() / 2+1), 15));
+            this.world.addAgent(new Ambulance(this.world, "Ambulance" + i, new Location(ThesisWorld.MAP_SIZE.getLeft() / 2, ThesisWorld.MAP_SIZE.getRight() / 2)));
+//        this.world.addAgent(new Ambulance(this.world, "Ambulance1", new Location(ThesisWorld.MAP_SIZE.getLeft() / 2, ThesisWorld.MAP_SIZE.getRight() / 2)));
+//        this.world.addAgent(new Ambulance(this.world, "Ambulance1", new Location(ThesisWorld.MAP_SIZE.getLeft() / 2-2, ThesisWorld.MAP_SIZE.getRight() / 2-2)));
+//        this.world.addAgent(new Ambulance(this.world, "Ambulance2", new Location(ThesisWorld.MAP_SIZE.getLeft() / 2+1, ThesisWorld.MAP_SIZE.getRight() / 2+1)));
+        for (int i = 1; i <= nHospital; i++)
+            this.world.addAgent(new Hospital(this.world, "Hospital" + i, new Location(ThesisWorld.MAP_SIZE.getLeft() / 2, ThesisWorld.MAP_SIZE.getRight() / 2), 30));
+//        this.world.addAgent(new Hospital(this.world, "Hospital1", new Location(ThesisWorld.MAP_SIZE.getLeft() / 2-2, ThesisWorld.MAP_SIZE.getRight() / 2-2), 30));
+//        this.world.addAgent(new Hospital(this.world, "Hospital2", new Location(ThesisWorld.MAP_SIZE.getLeft() / 2+1, ThesisWorld.MAP_SIZE.getRight() / 2+1), 15));
 
         this.checker = null;
     }

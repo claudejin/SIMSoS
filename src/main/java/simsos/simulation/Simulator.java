@@ -38,7 +38,7 @@ public class Simulator {
                     }
                 }
 
-                Collections.shuffle(immediateActions);
+                Collections.shuffle(immediateActions, world.random);
                 progress(immediateActions);
             } while (immediateActions.size() > 0);
 
@@ -46,7 +46,7 @@ public class Simulator {
             actions.addAll(exoActions);
             actions = new ArrayList<Action>(new LinkedHashSet<Action>(actions)); // Remove duplicates
 
-            Collections.shuffle(actions);
+            Collections.shuffle(actions, world.random);
             progress(actions);
             world.progress(1);
             simulationLog.add(world.getCurrentSnapshot());

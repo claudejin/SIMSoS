@@ -12,6 +12,7 @@ import simsos.simulation.component.World;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Random;
 
 /**
  * Created by mgjin on 2017-06-12.
@@ -30,14 +31,15 @@ public class SIMSoS {
             }
         }
 
-        SoSType sostype = SoSType.Virtual;
+        SoSType sostype = SoSType.Collaborative;
 
-        Scenario scenario = new ThesisScenario(sostype, 32, 0, 1, 2);
+        Scenario scenario = new ThesisScenario(sostype, 32, 1, 1, 1);
         World world = scenario.getWorld();
 
-        for (int i = 0; i < 1; i++) {
+        for (int i = 0; i < 5000; i++) {
+            world.setSeed(new Random().nextLong());
             ((ThesisWorld) world).setSoSType(sostype);
-            Simulator.execute(world, 24);
+            Simulator.execute(world, 50);
 
             ArrayList<Patient> patients = (ArrayList<Patient>) world.getResources().get("Patients");
             int numDiscovered = 0;
@@ -51,10 +53,11 @@ public class SIMSoS {
                 else if (patient.getStatus() == Patient.Status.Hospitalized)
                     numHospitalized++;
             }
-            System.out.println("Discovery Rate: " + Math.round((float) numDiscovered / patients.size() * 100) + "% (" + numDiscovered + "/" + patients.size() + ")");
-            System.out.println("OnTransport Rate: " + Math.round((float) numOnTransport / patients.size() * 100) + "% (" + numOnTransport + "/" + patients.size() + ")");
-            System.out.println("Hospitalized Rate: " + Math.round((float) numHospitalized / patients.size() * 100) + "% (" + numHospitalized + "/" + patients.size() + ")");
+//            System.out.println("Discovery Rate: " + Math.round((float) numDiscovered / patients.size() * 100) + "% (" + numDiscovered + "/" + patients.size() + ")");
 //            System.out.println(Math.round((float) numDiscovered / patients.size() * 100));
+//            System.out.println("OnTransport Rate: " + Math.round((float) numOnTransport / patients.size() * 100) + "% (" + numOnTransport + "/" + patients.size() + ")");
+//            System.out.println("Hospitalized Rate: " + Math.round((float) numHospitalized / patients.size() * 100) + "% (" + numHospitalized + "/" + patients.size() + ")");
+            System.out.println(Math.round((float) numHospitalized / patients.size() * 100));
         }
 
 //        PropertyChecker checker = scenario.getChecker();

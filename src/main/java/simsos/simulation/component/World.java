@@ -13,10 +13,12 @@ import java.util.Random;
 public abstract class World {
     public final Random random;
 
+    protected long seed = 0;
     protected ArrayList<Agent> agents = new ArrayList<Agent>();
     protected int time = 0;
 
     public World(long seed) {
+        this.seed = seed;
         this.random = new Random(seed);
     }
 
@@ -29,6 +31,8 @@ public abstract class World {
     }
 
     public void reset() {
+        this.random.setSeed(this.seed);
+
         for (Agent agent : this.agents)
             agent.reset();
 
@@ -37,6 +41,10 @@ public abstract class World {
 
     public void progress(int time) {
         this.time += time;
+    }
+
+    public void setSeed(long seed) {
+        this.seed = seed;
     }
 
     public int getTime() {
