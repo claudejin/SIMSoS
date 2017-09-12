@@ -13,20 +13,20 @@ import java.util.HashSet;
 
 public class ControlTower extends RationalEconomicCS {
 
-    Maptrix<HashSet> discoveryBeliefMap = new Maptrix<HashSet>(HashSet.class, ThesisWorld.MAP_SIZE.getLeft(), ThesisWorld.MAP_SIZE.getRight());
+    Maptrix<HashSet> pulloutBeliefMap = new Maptrix<HashSet>(HashSet.class, ThesisWorld.MAP_SIZE.getLeft(), ThesisWorld.MAP_SIZE.getRight());
 
-    private final Message requestFireFighterDiscoveryReport = new Message();
+    private final Message requestFireFighterPulloutReport = new Message();
 
     public ControlTower(World world, String name) {
         super(world);
 
         this.name = name;
 
-        requestFireFighterDiscoveryReport.name = "Request FireFighter's discovery report";
-        requestFireFighterDiscoveryReport.sender = this.getName();
-        requestFireFighterDiscoveryReport.receiver = "FireFighter";
-        requestFireFighterDiscoveryReport.purpose = Message.Purpose.ReqInfo;
-        requestFireFighterDiscoveryReport.data.put("Discovered", null);
+        requestFireFighterPulloutReport.name = "Request FireFighter's Pullout report";
+        requestFireFighterPulloutReport.sender = this.getName();
+        requestFireFighterPulloutReport.receiver = "FireFighter";
+        requestFireFighterPulloutReport.purpose = Message.Purpose.ReqInfo;
+        requestFireFighterPulloutReport.data.put("Pulledout", null);
 
         this.reset();
     }
@@ -39,14 +39,14 @@ public class ControlTower extends RationalEconomicCS {
     @Override
     protected void consumeInformation() {
         for (Message message : this.incomingInformation) {
-            // Discovery report from FireFighters
-            if (message.sender.startsWith("FireFighter") && message.purpose == Message.Purpose.Response && message.data.containsKey("Discovered")) {
-                if (message.data.get("Discovered") != null) {
-                    Patient discoveredPatient = (Patient) message.data.get("Discovered");
-                    Location discoveredLocation = (Location) message.data.get("Location");
+            // Pullout report from FireFighters
+            if (message.sender.startsWith("FireFighter") && message.purpose == Message.Purpose.Response && message.data.containsKey("Pulledout")) {
+                if (message.data.get("Pulledout") != null) {
+                    Patient pulledoutPatient = (Patient) message.data.get("Pulledout");
+                    Location pulledoutLocation = (Location) message.data.get("Location");
 
-                    this.discoveryBeliefMap.getValue(discoveredLocation).add(discoveredPatient);
-                }
+                    this.pulloutBeliefMap.getValue(pulledoutLocation).add(pulledoutPatient);
+            }
             }
         }
     }
@@ -58,7 +58,7 @@ public class ControlTower extends RationalEconomicCS {
         }
 
         if (this.world.getResources().get("Type") == ThesisScenario.SoSType.Acknowledged) {
-            this.immediateActionList.add(new ABCItem(new SendMessage(this.requestFireFighterDiscoveryReport), 0, 0));
+            this.immediateActionList.add(new ABCItem(new SendMessage(this.requestFireFighterPulloutReport), 0, 0));
         }
     }
 
@@ -90,7 +90,7 @@ public class ControlTower extends RationalEconomicCS {
     @Override
     public HashMap<String, Object> getProperties() {
         HashMap<String, Object> properties = new HashMap<String, Object>();
-        properties.put("DiscoveryBeliefMap", this.discoveryBeliefMap);
+        properties.put("PulloutBeliefMap", this.pulloutBeliefMap);
         return properties;
     }
 }

@@ -285,7 +285,7 @@ public class ThesisWorld extends World {
                     for (int y = 0; y < MAP_SIZE.getRight(); y++) {
                         if (pv.propertyName.equals("PatientsBeliefMap") || pv.propertyName.equals("AwaitBeliefMap") )
                             map[x][y] = "" + ((TimedValue) beliefMap.getValue(x, y)).toString();
-                        else if (pv.propertyName.equals("DiscoveryBeliefMap"))
+                        else if (pv.propertyName.equals("PulloutBeliefMap"))
                             map[x][y] = "" + ((TimedValue<HashSet>) beliefMap.getValue(x, y)).getValue().size();
                         else
                             map[x][y] = "" + beliefMap.getValue(x, y).size();
@@ -328,7 +328,7 @@ public class ThesisWorld extends World {
                if (map[location.getX()][location.getY()] == null)
                    map[location.getX()][location.getY()] = "";
                if (pv.subject instanceof Patient)
-                   if (((Patient) pv.subject).getStatus() == Patient.Status.Discovered)
+                   if (((Patient) pv.subject).getStatus() == Patient.Status.Pulledout)
                        map[location.getX()][location.getY()] += ANSI_RED + pv.subject.getSymbol() + ANSI_RESET;
                    else if (((Patient) pv.subject).getStatus() == Patient.Status.OnTransport)
                        map[location.getX()][location.getY()] += ANSI_BLUE + pv.subject.getSymbol() + ANSI_RESET;
@@ -374,24 +374,28 @@ public class ThesisWorld extends World {
         System.out.println(String.join("", Collections.nCopies((maximalLength[MAP_SIZE.getLeft() - 1] + 1) / stringFactor, "─")) + "┘");
     }
 
-    public Set<Patient> getDiscoveredPatients(Location location) {
-        Set<Patient> discoveredPatients = new HashSet<Patient>();
+    public Set<Patient> getPulledoutPatients() {
+        return new HashSet<Patient>();
+    }
+
+    public Set<Patient> getPulledoutPatients(Location location) {
+        Set<Patient> pulledoutPatients = new HashSet<Patient>();
 
         ArrayList<Patient> patients = this.patientsMap.getValue(location);
         for (Patient patient : patients) {
-            if (patient.getStatus() == Patient.Status.Discovered) {
-                discoveredPatients.add(patient);
+            if (patient.getStatus() == Patient.Status.Pulledout) {
+                pulledoutPatients.add(patient);
             }
         }
 
-        return discoveredPatients;
+        return pulledoutPatients;
     }
-    public Patient getUndiscoveredPatient(Location location) {
+    public Patient getTrappedPatient(Location location) {
         ArrayList<Patient> patients = this.patientsMap.getValue(location);
 
         for (Patient patient : patients) {
             if (patient.getStatus() == Patient.Status.Initial) {
-                patient.setStatus(Patient.Status.Discovered);
+                patient.setStatus(Patient.Status.Pulledout);
 
                 return patient;
             }

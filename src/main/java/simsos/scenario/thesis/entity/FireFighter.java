@@ -18,7 +18,7 @@ public class FireFighter extends RationalEconomicCS {
     private enum Direction {NONE, LEFT, RIGHT, UP, DOWN}
     private Direction lastDirection;
 
-    private Patient discoveredPatient = null;
+    private Patient pulledoutPatient = null;
 
     public FireFighter(World world, String name) {
         super(world);
@@ -29,18 +29,18 @@ public class FireFighter extends RationalEconomicCS {
 
     @Override
     protected void observeEnvironment() {
-        // FireFighter observe current location and update already discovered patients
+        // FireFighter observe current location and update already pulled-out patients
         Set<Patient> localBelief = this.beliefMap.getValue(this.location);
-        Set<Patient> discoveredPatients = ((ThesisWorld) this.world).getDiscoveredPatients(this.location);
-        localBelief.addAll(discoveredPatients);
+        Set<Patient> pulledOutPatients = ((ThesisWorld) this.world).getPulledoutPatients(this.location);
+        localBelief.addAll(pulledOutPatients);
     }
 
     @Override
     protected void consumeInformation() {
         for (Message message : this.incomingInformation) {
-            // Discovery belief share from FireFighters
-            if (message.sender.startsWith("FireFighter") && message.purpose == Message.Purpose.Delivery && message.data.containsKey("DiscoveryBelief")) {
-                Maptrix<HashSet> othersBeliefMap = (Maptrix<HashSet>) message.data.get("DiscoveryBelief");
+            // PullOut belief share from FireFighters
+            if (message.sender.startsWith("FireFighter") && message.purpose == Message.Purpose.Delivery && message.data.containsKey("PulloutBelief")) {
+                Maptrix<HashSet> othersBeliefMap = (Maptrix<HashSet>) message.data.get("PulloutBelief");
 
                 for (int x = 0; x < ThesisWorld.MAP_SIZE.getLeft(); x++)
                     for (int y = 0; y < ThesisWorld.MAP_SIZE.getRight(); y++)
@@ -51,10 +51,10 @@ public class FireFighter extends RationalEconomicCS {
 
     @Override
     protected void generateActiveImmediateActions() {
-        // I-Discover
+        // I-PullOut
         switch ((SoSType) this.world.getResources().get("Type")) {
             default:
-            this.immediateActionList.add(new ABCItem(this.discoverPatient, 10, 1));
+            this.immediateActionList.add(new ABCItem(this.pulloutPatient, 10, 1));
         }
 
         // I-Share
@@ -62,12 +62,12 @@ public class FireFighter extends RationalEconomicCS {
             case Acknowledged:
             case Collaborative:
                 Message beliefShare = new Message();
-                beliefShare.name = "Share discovery belief";
+                beliefShare.name = "Share Pullout belief";
                 beliefShare.sender = this.getName();
                 beliefShare.receiver = "FireFighter";
                 beliefShare.location = this.location;
                 beliefShare.purpose = Message.Purpose.Delivery;
-                beliefShare.data.put("DiscoveryBelief", this.beliefMap);
+                beliefShare.data.put("PulloutBelief", this.beliefMap);
 
                 this.immediateActionList.add(new ABCItem(new SendMessage(beliefShare), 0, 0));
                 break;
@@ -94,20 +94,20 @@ public class FireFighter extends RationalEconomicCS {
                 }
             }
 
-            // I-ReportDiscovery
-            if (message.sender.equals("ControlTower") && message.purpose == Message.Purpose.ReqInfo && message.data.containsKey("Discovered")) {
+            // I-ReportPullout
+            if (message.sender.equals("ControlTower") && message.purpose == Message.Purpose.ReqInfo && message.data.containsKey("Pulledout")) {
                 switch ((SoSType) this.world.getResources().get("Type")) {
                     case Directed:
                     case Acknowledged:
-                        Message discoveryReport = new Message();
-                        discoveryReport.name = "Respond discovery report";
-                        discoveryReport.sender = this.getName();
-                        discoveryReport.receiver = message.sender;
-                        discoveryReport.purpose = Message.Purpose.Response;
-                        discoveryReport.data.put("Discovered", this.discoveredPatient);
-                        discoveryReport.data.put("Location", this.discoveredPatient != null ? new Location(this.discoveredPatient.getLocation()) : null);
+                        Message pulloutReport = new Message();
+                        pulloutReport.name = "Respond Pullout report";
+                        pulloutReport.sender = this.getName();
+                        pulloutReport.receiver = message.sender;
+                        pulloutReport.purpose = Message.Purpose.Response;
+                        pulloutReport.data.put("Pulledout", this.pulledoutPatient);
+                        pulloutReport.data.put("Location", this.pulledoutPatient != null ? new Location(this.pulledoutPatient.getLocation()) : null);
 
-                        this.immediateActionList.add(new ABCItem(new SendMessage(discoveryReport), 0, 0));
+                        this.immediateActionList.add(new ABCItem(new SendMessage(pulloutReport), 0, 0));
                         break;
                 }
             }
@@ -154,7 +154,7 @@ public class FireFighter extends RationalEconomicCS {
         this.location.setLocation(ThesisWorld.MAP_SIZE.getLeft() / 2, ThesisWorld.MAP_SIZE.getRight() / 2);
 
         this.lastDirection = Direction.NONE;
-        this.discoveredPatient = null;
+        this.pulledoutPatient = null;
     }
 
     @Override
@@ -175,22 +175,22 @@ public class FireFighter extends RationalEconomicCS {
         return properties;
     }
 
-    private final Action discoverPatient = new Action(0) {
+    private final Action pulloutPatient = new Action(0) {
 
         @Override
         public void execute() {
-            FireFighter.this.discoveredPatient = ((ThesisWorld) FireFighter.this.world).getUndiscoveredPatient(FireFighter.this.location);
+            FireFighter.this.pulledoutPatient = ((ThesisWorld) FireFighter.this.world).getTrappedPatient(FireFighter.this.location);
 
-            if (FireFighter.this.discoveredPatient != null) {
-                FireFighter.this.beliefMap.getValue(FireFighter.this.location).add(FireFighter.this.discoveredPatient);
+            if (FireFighter.this.pulledoutPatient != null) {
+                FireFighter.this.beliefMap.getValue(FireFighter.this.location).add(FireFighter.this.pulledoutPatient);
             } else {
-                // Fail to discover a patient
+                // Fail to pull out a patient
             }
         }
 
         @Override
         public String getName() {
-            return FireFighter.this.getName() + ": Discover a patient";
+            return FireFighter.this.getName() + ": Pull out a patient";
         }
     };
 

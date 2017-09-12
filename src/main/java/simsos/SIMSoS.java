@@ -42,22 +42,22 @@ public class SIMSoS {
             Simulator.execute(world, 50);
 
             ArrayList<Patient> patients = (ArrayList<Patient>) world.getResources().get("Patients");
-            int numDiscovered = 0;
+            int numPulledout = 0;
             int numOnTransport = 0;
             int numHospitalized = 0;
             for (Patient patient : patients) {
-                if (patient.getStatus() == Patient.Status.Discovered)
-                    numDiscovered++;
+                if (patient.getStatus() == Patient.Status.Pulledout)
+                    numPulledout++;
                 else if (patient.getStatus() == Patient.Status.OnTransport)
                     numOnTransport++;
                 else if (patient.getStatus() == Patient.Status.Hospitalized)
                     numHospitalized++;
             }
-//            System.out.println("Discovery Rate: " + Math.round((float) numDiscovered / patients.size() * 100) + "% (" + numDiscovered + "/" + patients.size() + ")");
-//            System.out.println(Math.round((float) numDiscovered / patients.size() * 100));
+//            System.out.println("Pullout Rate: " + Math.round((float) numPulledout / patients.size() * 100) + "% (" + numPulledout + "/" + patients.size() + ")");
+//            System.out.println(Math.round((float) numPulledout / patients.size() * 100));
 //            System.out.println("OnTransport Rate: " + Math.round((float) numOnTransport / patients.size() * 100) + "% (" + numOnTransport + "/" + patients.size() + ")");
 //            System.out.println("Hospitalized Rate: " + Math.round((float) numHospitalized / patients.size() * 100) + "% (" + numHospitalized + "/" + patients.size() + ")");
-            System.out.println(Math.round((float) (numDiscovered+numOnTransport+numHospitalized) / patients.size() * 100) + "," + Math.round((float) numHospitalized / patients.size() * 100));
+            System.out.println(Math.round((float) (numPulledout+numOnTransport+numHospitalized) / patients.size() * 100) + "," + Math.round((float) numHospitalized / patients.size() * 100));
         }
 
 //        PropertyChecker checker = scenario.getChecker();

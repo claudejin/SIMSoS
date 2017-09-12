@@ -46,11 +46,11 @@ public class Ambulance extends RationalEconomicCS {
 
     @Override
     protected void observeEnvironment() {
-        // FireFighter observe current location and update already discovered patients
+        // FireFighter observe current location and update already pulled out patients
         TimedValue<Integer> localAwaitBelief = this.awaitBeliefMap.getValue(this.location);
 
-        Set<Patient> discoveredPatients = ((ThesisWorld) this.world).getDiscoveredPatients(this.location);
-        localAwaitBelief.updateValue(new TimedValue<Integer>(this.world.getTime(), discoveredPatients.size()));
+        Set<Patient> pulledoutPatients = ((ThesisWorld) this.world).getPulledoutPatients(this.location);
+        localAwaitBelief.updateValue(new TimedValue<Integer>(this.world.getTime(), pulledoutPatients.size()));
     }
 
     @Override
@@ -277,10 +277,10 @@ public class Ambulance extends RationalEconomicCS {
             if (this.targetPatient != null)
                 Ambulance.this.targetPatient = this.targetPatient;
             else {
-                Set<Patient> discoveredPatients = ((ThesisWorld) Ambulance.this.world).getDiscoveredPatients(Ambulance.this.location);
+                Set<Patient> pulledoutPatients = ((ThesisWorld) Ambulance.this.world).getPulledoutPatients(Ambulance.this.location);
 
-                if (!discoveredPatients.isEmpty()) {
-                    this.targetPatient = ((ThesisWorld) Ambulance.this.world).getDiscoveredPatients(Ambulance.this.location).iterator().next();
+                if (!pulledoutPatients.isEmpty()) {
+                    this.targetPatient = ((ThesisWorld) Ambulance.this.world).getPulledoutPatients(Ambulance.this.location).iterator().next();
                     Ambulance.this.targetPatient = this.targetPatient;
                     Ambulance.this.headingLocation = new Location(this.targetPatient.getLocation());
                 }
@@ -301,7 +301,7 @@ public class Ambulance extends RationalEconomicCS {
                 return;
 
             // Pick up and start transporting
-            if (Ambulance.this.targetPatient.getStatus() == Patient.Status.Discovered) {
+            if (Ambulance.this.targetPatient.getStatus() == Patient.Status.Pulledout) {
                 Ambulance.this.targetPatient.setStatus(Patient.Status.OnTransport);
                 Ambulance.this.targetPatient.setLocation(Ambulance.this.location);
                 Ambulance.this.headingLocation = Ambulance.this.getBestHospitalLocation();

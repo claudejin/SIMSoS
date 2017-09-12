@@ -7,7 +7,7 @@ import java.util.Random;
 public class Patient implements HasName {
     private final Random random;
 
-    public enum Status {Initial, Discovered, OnTransport, Hospitalized, Cured, Dead}
+    public enum Status {Initial, Pulledout, OnTransport, Hospitalized, Cured, Dead}
     public enum Severity {Delayed, Immediate}
 
     private final String name;
@@ -63,12 +63,12 @@ public class Patient implements HasName {
             case Hospitalized:
                 // This patient is under treatment
             case Initial:
-                // This patient is not yet discovered by fire fighters
+                // This patient is not yet pulled out by fire fighters
                 break;
 
-            case Discovered:
+            case Pulledout:
             case OnTransport:
-                // Once the patient is discovered, it bleeds and loose its life points
+                // Once the patient is pulled out, it bleeds and loose its life points
                 int bleedPoint = 0;
                 if (this.severity == Severity.Immediate)
                     bleedPoint = 10;
@@ -90,8 +90,8 @@ public class Patient implements HasName {
             case Initial:
                 stat = "Initial";
                 break;
-            case Discovered:
-                stat = "Discovered";
+            case Pulledout:
+                stat = "Pulledout";
                 break;
             case OnTransport:
                 stat = "OnTransport";
