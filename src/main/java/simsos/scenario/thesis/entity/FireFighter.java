@@ -1,5 +1,6 @@
 package simsos.scenario.thesis.entity;
 
+import com.sun.org.apache.xpath.internal.operations.Bool;
 import simsos.scenario.thesis.ThesisScenario.SoSType;
 import simsos.scenario.thesis.ThesisWorld;
 import simsos.scenario.thesis.util.*;
@@ -11,12 +12,15 @@ import java.util.*;
 public class FireFighter extends RationalEconomicCS {
 
     Maptrix<Integer> expectedPatientsMap = (Maptrix<Integer>) this.world.getResources().get("ExpectedPatientsMap");
-    Maptrix<HashSet> beliefMap = new Maptrix<HashSet>(HashSet.class, ThesisWorld.MAP_SIZE.getLeft(), ThesisWorld.MAP_SIZE.getRight());
+    Maptrix<Boolean> beliefMap = new Maptrix<Boolean>(Boolean.TYPE, ThesisWorld.MAP_SIZE.getLeft(), ThesisWorld.MAP_SIZE.getRight());
 
     private Location location = new Location(ThesisWorld.MAP_SIZE.getLeft() / 2, ThesisWorld.MAP_SIZE.getRight() / 2);;
 
     private enum Direction {NONE, LEFT, RIGHT, UP, DOWN}
     private Direction lastDirection;
+
+    private enum Status {Pullout, Complete}
+    private Status status;
 
     private Patient pulledoutPatient = null;
 
@@ -30,9 +34,6 @@ public class FireFighter extends RationalEconomicCS {
     @Override
     protected void observeEnvironment() {
         // FireFighter observe current location and update already pulled-out patients
-        Set<Patient> localBelief = this.beliefMap.getValue(this.location);
-        Set<Patient> pulledOutPatients = ((ThesisWorld) this.world).getPulledoutPatients(this.location);
-        localBelief.addAll(pulledOutPatients);
     }
 
     @Override
@@ -40,11 +41,15 @@ public class FireFighter extends RationalEconomicCS {
         for (Message message : this.incomingInformation) {
             // PullOut belief share from FireFighters
             if (message.sender.startsWith("FireFighter") && message.purpose == Message.Purpose.Delivery && message.data.containsKey("PulloutBelief")) {
-                Maptrix<HashSet> othersBeliefMap = (Maptrix<HashSet>) message.data.get("PulloutBelief");
+                Maptrix<Boolean> othersBeliefMap = (Maptrix<Boolean>) message.data.get("PulloutBelief");
 
+                boolean localBelief = false;
                 for (int x = 0; x < ThesisWorld.MAP_SIZE.getLeft(); x++)
-                    for (int y = 0; y < ThesisWorld.MAP_SIZE.getRight(); y++)
-                        this.beliefMap.getValue(x, y).addAll(othersBeliefMap.getValue(x, y));
+                    for (int y = 0; y < ThesisWorld.MAP_SIZE.getRight(); y++) {
+                        localBelief = this.beliefMap.getValue(x, y);
+                        localBelief = localBelief || othersBeliefMap.getValue(x, y);
+                        this.beliefMap.setValue(x, y, localBelief);
+                    }
             }
         }
     }
@@ -65,7 +70,7 @@ public class FireFighter extends RationalEconomicCS {
                 beliefShare.name = "Share Pullout belief";
                 beliefShare.sender = this.getName();
                 beliefShare.receiver = "FireFighter";
-                beliefShare.location = this.location;
+//                beliefShare.location = this.location;
                 beliefShare.purpose = Message.Purpose.Delivery;
                 beliefShare.data.put("PulloutBelief", this.beliefMap);
 
@@ -116,23 +121,24 @@ public class FireFighter extends RationalEconomicCS {
 
     @Override
     protected void generateNormalActions() {
-        // N-Directed Moves
-        if (this.world.getResources().get("Type") == SoSType.Directed) {
+        if (this.status == Status.Complete) {
+            // N-Directed Moves
+            if (this.world.getResources().get("Type") == SoSType.Directed) {
 
+            }
+
+            // N-Autonomous Moves
+            if (this.world.getResources().get("Type") != SoSType.Directed) {
+                if (FireFighter.this.location.getX() > 0 && lastDirection != Direction.RIGHT)
+                    normalActionList.add(new ABCItem(new Move(Direction.LEFT), 0, calculateMoveCost(-1, 0)));
+                if (FireFighter.this.location.getX() < ThesisWorld.MAP_SIZE.getLeft() - 1 && lastDirection != Direction.LEFT)
+                    normalActionList.add(new ABCItem(new Move(Direction.RIGHT), 0, calculateMoveCost(1, 0)));
+                if (FireFighter.this.location.getY() > 0 && lastDirection != Direction.DOWN)
+                    normalActionList.add(new ABCItem(new Move(Direction.UP), 0, calculateMoveCost(0, -1)));
+                if (FireFighter.this.location.getY() < ThesisWorld.MAP_SIZE.getRight() - 1 && lastDirection != Direction.UP)
+                    normalActionList.add(new ABCItem(new Move(Direction.DOWN), 0, calculateMoveCost(0, 1)));
+            }
         }
-
-        // N-Autonomous Moves
-        if (this.world.getResources().get("Type") != SoSType.Directed) {
-            if (FireFighter.this.location.getX() > 0 && lastDirection != Direction.RIGHT)
-                normalActionList.add(new ABCItem(new Move(Direction.LEFT), 0, calculateMoveCost(-1, 0)));
-            if (FireFighter.this.location.getX() < ThesisWorld.MAP_SIZE.getLeft() - 1 && lastDirection != Direction.LEFT)
-                normalActionList.add(new ABCItem(new Move(Direction.RIGHT), 0, calculateMoveCost(1, 0)));
-            if (FireFighter.this.location.getY() > 0 && lastDirection != Direction.DOWN)
-                normalActionList.add(new ABCItem(new Move(Direction.UP), 0, calculateMoveCost(0, -1)));
-            if (FireFighter.this.location.getY() < ThesisWorld.MAP_SIZE.getRight() - 1 && lastDirection != Direction.UP)
-                normalActionList.add(new ABCItem(new Move(Direction.DOWN), 0, calculateMoveCost(0, 1)));
-        }
-
     }
 
     public int calculateMoveCost(int deltaX, int deltaY) {
@@ -141,7 +147,7 @@ public class FireFighter extends RationalEconomicCS {
         int totalCost = this.world.random.nextInt(2);
 
         // Belief cost
-        totalCost += this.beliefMap.getValue(nextLocation.getX(), nextLocation.getY()).size();
+        totalCost += this.beliefMap.getValue(nextLocation.getX(), nextLocation.getY()) ? 1 : 0;
         totalCost -= this.expectedPatientsMap.getValue(nextLocation.getX(), nextLocation.getY());
 
         return totalCost;
@@ -150,7 +156,11 @@ public class FireFighter extends RationalEconomicCS {
     @Override
     public void reset() {
         this.beliefMap.reset();
+        for (int x = 0; x < ThesisWorld.MAP_SIZE.getLeft(); x++)
+            for (int y = 0; y < ThesisWorld.MAP_SIZE.getRight(); y++)
+                this.beliefMap.setValue(x, y, false);
 
+        this.status = Status.Pullout;
         this.location.setLocation(ThesisWorld.MAP_SIZE.getLeft() / 2, ThesisWorld.MAP_SIZE.getRight() / 2);
 
         this.lastDirection = Direction.NONE;
@@ -171,7 +181,7 @@ public class FireFighter extends RationalEconomicCS {
     public HashMap<String, Object> getProperties() {
         HashMap<String, Object> properties = new HashMap<String, Object>();
         properties.put("Location", this.location);
-        properties.put("BeliefMap", this.beliefMap);
+        properties.put("PulloutBeliefMap", this.beliefMap);
         return properties;
     }
 
@@ -181,10 +191,10 @@ public class FireFighter extends RationalEconomicCS {
         public void execute() {
             FireFighter.this.pulledoutPatient = ((ThesisWorld) FireFighter.this.world).getTrappedPatient(FireFighter.this.location);
 
-            if (FireFighter.this.pulledoutPatient != null) {
-                FireFighter.this.beliefMap.getValue(FireFighter.this.location).add(FireFighter.this.pulledoutPatient);
-            } else {
-                // Fail to pull out a patient
+            // Pullout of this location is complete
+            if (FireFighter.this.pulledoutPatient == null) {
+                FireFighter.this.status = Status.Complete;
+                FireFighter.this.beliefMap.setValue(FireFighter.this.location, true);
             }
         }
 
@@ -223,6 +233,7 @@ public class FireFighter extends RationalEconomicCS {
             }
 
             FireFighter.this.lastDirection = this.direction;
+            FireFighter.this.status = Status.Pullout;
         }
 
         @Override

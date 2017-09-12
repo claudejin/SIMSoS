@@ -227,9 +227,9 @@ public class ThesisWorld extends World {
         for (Patient patient : this.patients)
             snapshot.addProperty(patient, "Location", patient.getLocation());
 
-        System.out.println("Time: " + this.time);
+//        System.out.println("Time: " + this.time);
 //        printExpectedPatientsMap();
-        printCurrentMap(snapshot);
+//        printCurrentMap(snapshot);
 //        printBeliefMap(snapshot);
         return snapshot;
     }
@@ -279,17 +279,19 @@ public class ThesisWorld extends World {
                 String [][] map = new String[MAP_SIZE.getLeft()][MAP_SIZE.getRight()];
                 int maximalLength = 0;
 
-                Maptrix<Set<Patient>> beliefMap = (Maptrix<Set<Patient>>) pv.value;
+                Maptrix beliefMap = (Maptrix) pv.value;
 
                 for (int x = 0; x < MAP_SIZE.getLeft(); x++)
                     for (int y = 0; y < MAP_SIZE.getRight(); y++) {
-                        if (pv.propertyName.equals("PatientsBeliefMap") || pv.propertyName.equals("AwaitBeliefMap") )
+                        if (pv.propertyName.equals("PatientsBeliefMap"))
                             map[x][y] = "" + ((TimedValue) beliefMap.getValue(x, y)).toString();
                         else if (pv.propertyName.equals("PulloutBeliefMap"))
-                            map[x][y] = "" + ((TimedValue<HashSet>) beliefMap.getValue(x, y)).getValue().size();
-                        else
-                            map[x][y] = "" + beliefMap.getValue(x, y).size();
-                        maximalLength = Math.max(maximalLength, map[x][y].length());
+                            map[x][y] = "" + ((boolean) beliefMap.getValue(x, y) ? ANSI_GREEN + "C" + ANSI_RESET : ANSI_RED + "P" + ANSI_RESET);
+                        else {
+                            System.out.println("Undefined belief");
+                            System.exit(1);
+                        }
+                        maximalLength = Math.max(maximalLength, map[x][y].replaceAll("\u001B\\[[;\\d]*m", "").length());
                     }
 
                 maximalLength = (maximalLength + 1) / stringFactor; // roundup for division by 2
@@ -304,7 +306,7 @@ public class ThesisWorld extends World {
                         if (map[x][y] == null)
                             System.out.print(StringUtils.repeat(" ", stringFactor * maximalLength));
                         else
-                            System.out.print(map[x][y] + StringUtils.repeat(" ", stringFactor * maximalLength - map[x][y].length()));
+                            System.out.print(map[x][y] + StringUtils.repeat(" ", maximalLength * stringFactor - map[x][y].replaceAll("\u001B\\[[;\\d]*m", "").length()));
                         System.out.print("│");
                     }
                     System.out.println("");
