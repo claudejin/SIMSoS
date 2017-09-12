@@ -9,11 +9,8 @@ import simsos.simulation.component.World;
 import java.util.*;
 
 public class Ambulance extends RationalEconomicCS {
-
-    Maptrix<TimedValue> awaitBeliefMap = new Maptrix<TimedValue>(TimedValue.class, ThesisWorld.MAP_SIZE.getLeft(), ThesisWorld.MAP_SIZE.getRight());
-
     LinkedHashMap<String, Location> hospitalLocations = new LinkedHashMap<String, Location>();
-    LinkedHashMap<String, TimedValue<Integer>> hospitalCapacities = new LinkedHashMap<String, TimedValue<Integer>>();
+    LinkedHashMap<String, Integer> hospitalCapacities = new LinkedHashMap<String, Integer>();
 
     private Location initialLocation;
     private Location location;
@@ -40,17 +37,12 @@ public class Ambulance extends RationalEconomicCS {
         this.hospitalCapacities.clear();
 
         this.hospitalLocations.putAll(hospitalLocations);
-        for (Map.Entry<String, Integer> entry : hospitalCapacities.entrySet())
-            this.hospitalCapacities.put(entry.getKey(), new TimedValue<Integer>(0, entry.getValue()));
+        this.hospitalCapacities.putAll(hospitalCapacities);
     }
 
     @Override
     protected void observeEnvironment() {
-        // FireFighter observe current location and update already pulled out patients
-        TimedValue<Integer> localAwaitBelief = this.awaitBeliefMap.getValue(this.location);
 
-        Set<Patient> pulledoutPatients = ((ThesisWorld) this.world).getPulledoutPatients(this.location);
-        localAwaitBelief.updateValue(new TimedValue<Integer>(this.world.getTime(), pulledoutPatients.size()));
     }
 
     @Override
@@ -58,7 +50,7 @@ public class Ambulance extends RationalEconomicCS {
         for (Message message : this.incomingInformation) {
             // Capacity response from hospitals at this location
             if (message.sender.startsWith("Hospital") && message.purpose == Message.Purpose.Response && message.data.containsKey("Capacity")) {
-                this.hospitalCapacities.get(message.sender).updateValue((TimedValue) message.data.get("Capacity"));
+                this.hospitalCapacities.put(message.sender, (Integer) message.data.get("Capacity"));
 
             // Hospitalize response from the hospital
             } else if (message.sender.startsWith("Hospital") && message.purpose == Message.Purpose.Response && message.data.containsKey("Hospitalized")) {
@@ -73,21 +65,10 @@ public class Ambulance extends RationalEconomicCS {
 
                 }
 
-            // Capacity belief and Await belief, shared from other ambulances at this location
-            } else if (message.sender.startsWith("Ambulance") && message.purpose == Message.Purpose.Delivery && message.data.containsKey("HospitalCapacityBelief")) {
-                LinkedHashMap<String, TimedValue<Integer>> othersCapacityBelief = (LinkedHashMap<String, TimedValue<Integer>>) message.data.get("HospitalCapacityBelief");
-                Maptrix<TimedValue<Integer>> othersAwaitBeliefMap = (Maptrix<TimedValue<Integer>>) message.data.get("AwaitBeliefMap");
-
-                for (Map.Entry<String, TimedValue<Integer>> entry : othersCapacityBelief.entrySet())
-                    this.hospitalCapacities.get(entry.getKey()).updateValue(entry.getValue());
-
-                for (int x = 0; x < ThesisWorld.MAP_SIZE.getLeft(); x++)
-                    for (int y = 0; y < ThesisWorld.MAP_SIZE.getRight(); y++)
-                        this.awaitBeliefMap.getValue(x, y).updateValue(othersAwaitBeliefMap.getValue(x, y));
-
             // Patient set request from ControlTower
             } else if (message.sender.equals("ControlTower") && message.purpose == Message.Purpose.ReqAction && message.data.containsKey("Patient")) {
 //                this.immediateActionList.add(new ABCItem(new SetTargetPatient(some patient), 0, 0));
+
             // Patient set order from ControlTower
             } else if (message.sender.equals("ControlTower") && message.purpose == Message.Purpose.Order && message.data.containsKey("Patient")) {
 //                this.immediateActionList.add(new ABCItem(new SetTargetPatient(some patient), 11, 0));
@@ -104,28 +85,10 @@ public class Ambulance extends RationalEconomicCS {
                 capacityRequest.name = "Request hospital capacity";
                 capacityRequest.sender = this.getName();
                 capacityRequest.receiver = "Hospital";
-                capacityRequest.location = this.location;
                 capacityRequest.purpose = Message.Purpose.ReqInfo;
                 capacityRequest.data.put("Capacity", null);
 
                 this.immediateActionList.add(new ABCItem(new SendMessage(capacityRequest), 10, 1));
-        }
-
-        // Share hospital capacity
-        switch ((SoSType) this.world.getResources().get("Type")) {
-            case Acknowledged:
-            case Collaborative:
-                Message beliefShare = new Message();
-                beliefShare.name = "Share hospital capacity belief";
-                beliefShare.sender = this.getName();
-                beliefShare.receiver = "Ambulance";
-                beliefShare.location = this.location;
-                beliefShare.purpose = Message.Purpose.Delivery;
-                beliefShare.data.put("HospitalCapacityBelief", this.hospitalCapacities);
-                beliefShare.data.put("AwaitBeliefMap", this.awaitBeliefMap);
-
-                this.immediateActionList.add(new ABCItem(new SendMessage(beliefShare), 9, 1));
-                break;
         }
 
         // Set a target patient at this location
@@ -220,10 +183,7 @@ public class Ambulance extends RationalEconomicCS {
             deltaX = 0; deltaY = 1;
         }
 
-        if (this.headingLocation == null)
-            // Belief cost
-            totalCost -= (Integer) this.awaitBeliefMap.getValue(this.location.add(deltaX, deltaY)).getValue(); // Awaiting
-        else
+        if (this.headingLocation != null)
             totalCost += this.headingLocation.distanceTo(this.location.add(deltaX, deltaY));
 
         return totalCost;
@@ -231,10 +191,6 @@ public class Ambulance extends RationalEconomicCS {
 
     @Override
     public void reset() {
-        for (int x = 0; x < ThesisWorld.MAP_SIZE.getLeft(); x++)
-            for (int y = 0; y < ThesisWorld.MAP_SIZE.getRight(); y++)
-                this.awaitBeliefMap.setValue(x, y, new TimedValue<Integer>(0, 0));
-
         this.lastDirection = Direction.NONE;
         this.location = new Location(this.initialLocation);
         this.status = Status.EMPTY;
@@ -256,7 +212,6 @@ public class Ambulance extends RationalEconomicCS {
     public HashMap<String, Object> getProperties() {
         HashMap<String, Object> properties = new HashMap<String, Object>();
         properties.put("Location", this.location);
-        properties.put("AwaitBeliefMap", this.awaitBeliefMap);
         return properties;
     }
 
@@ -277,10 +232,24 @@ public class Ambulance extends RationalEconomicCS {
             if (this.targetPatient != null)
                 Ambulance.this.targetPatient = this.targetPatient;
             else {
-                Set<Patient> pulledoutPatients = ((ThesisWorld) Ambulance.this.world).getPulledoutPatients(Ambulance.this.location);
+                Set<Patient> pulledoutPatients = ((ThesisWorld) Ambulance.this.world).getPulledoutPatients();
 
                 if (!pulledoutPatients.isEmpty()) {
-                    this.targetPatient = ((ThesisWorld) Ambulance.this.world).getPulledoutPatients(Ambulance.this.location).iterator().next();
+                    List<Patient> list = new ArrayList();
+                    list.addAll(pulledoutPatients);
+                    Collections.shuffle(list, Ambulance.this.world.random);
+                    list.sort(new Comparator<Patient>() {
+
+                        @Override
+                        public int compare(Patient o1, Patient o2) {
+                            int v1 = o1.getLocation().distanceTo(Ambulance.this.location);
+                            int v2 = o2.getLocation().distanceTo(Ambulance.this.location);
+
+                            return v1 - v2;
+                        }
+                    });
+
+                    this.targetPatient = list.get(0);
                     Ambulance.this.targetPatient = this.targetPatient;
                     Ambulance.this.headingLocation = new Location(this.targetPatient.getLocation());
                 }
@@ -302,11 +271,13 @@ public class Ambulance extends RationalEconomicCS {
 
             // Pick up and start transporting
             if (Ambulance.this.targetPatient.getStatus() == Patient.Status.Pulledout) {
-                Ambulance.this.targetPatient.setStatus(Patient.Status.OnTransport);
-                Ambulance.this.targetPatient.setLocation(Ambulance.this.location);
-                Ambulance.this.headingLocation = Ambulance.this.getBestHospitalLocation();
+                if (Ambulance.this.headingLocation.equals(Ambulance.this.location) && Ambulance.this.status == Status.EMPTY) {
+                    Ambulance.this.targetPatient.setStatus(Patient.Status.OnTransport);
+                    Ambulance.this.targetPatient.setLocation(Ambulance.this.location);
+                    Ambulance.this.headingLocation = Ambulance.this.getBestHospitalLocation();
 
-                Ambulance.this.status = Status.OCCUPIED;
+                    Ambulance.this.status = Status.OCCUPIED;
+                }
 
             // Fail to pick up and start transporting
             } else {
@@ -328,7 +299,10 @@ public class Ambulance extends RationalEconomicCS {
             return null;
 
         List<Map.Entry<String, Location>> list = new ArrayList();
-        list.addAll(this.hospitalLocations.entrySet());
+        for (Map.Entry<String, Location> hospitalInfo : this.hospitalLocations.entrySet())
+            if (this.hospitalCapacities.get(hospitalInfo.getKey()) > 0)
+                list.add(hospitalInfo);
+
         Collections.shuffle(list, this.world.random);
         list.sort(new Comparator<Map.Entry<String, Location>>() {
 

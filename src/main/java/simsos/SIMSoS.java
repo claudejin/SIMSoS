@@ -33,11 +33,11 @@ public class SIMSoS {
 
         SoSType sostype = SoSType.Collaborative;
 
-        Scenario scenario = new ThesisScenario(sostype, 32, 3, 3, 1);
+        Scenario scenario = new ThesisScenario(sostype, 32, 0, 3, 1);
         World world = scenario.getWorld();
 
-        for (int i = 0; i < 5000; i++) {
-            world.setSeed(new Random().nextLong());
+        for (int i = 0; i < 1; i++) {
+            world.setSeed(1);
             ((ThesisWorld) world).setSoSType(sostype);
             Simulator.execute(world, 50);
 
@@ -56,8 +56,8 @@ public class SIMSoS {
 //            System.out.println("Pullout Rate: " + Math.round((float) numPulledout / patients.size() * 100) + "% (" + numPulledout + "/" + patients.size() + ")");
 //            System.out.println(Math.round((float) numPulledout / patients.size() * 100));
 //            System.out.println("OnTransport Rate: " + Math.round((float) numOnTransport / patients.size() * 100) + "% (" + numOnTransport + "/" + patients.size() + ")");
-//            System.out.println("Hospitalized Rate: " + Math.round((float) numHospitalized / patients.size() * 100) + "% (" + numHospitalized + "/" + patients.size() + ")");
-            System.out.println(Math.round((float) (numPulledout+numOnTransport+numHospitalized) / patients.size() * 100) + "," + Math.round((float) numHospitalized / patients.size() * 100));
+            System.out.println("Hospitalized Rate: " + Math.round((float) numHospitalized / patients.size() * 100) + "% (" + numHospitalized + "/" + patients.size() + ")");
+//            System.out.println(Math.round((float) (numPulledout+numOnTransport+numHospitalized) / patients.size() * 100) + "," + Math.round((float) numHospitalized / patients.size() * 100));
         }
 
 //        PropertyChecker checker = scenario.getChecker();

@@ -72,7 +72,7 @@ public class Hospital extends RationalEconomicCS {
                         locationReport.sender = this.getName();
                         locationReport.receiver = message.sender;
                         locationReport.purpose = Message.Purpose.Response;
-                        locationReport.data.put("Capacity", new TimedValue<Integer>(this.world.getTime(), this.capacity));
+                        locationReport.data.put("Capacity", this.capacity);
 
                         this.immediateActionList.add(new ABCItem(new SendMessage(locationReport), 0, 1));
                         break;

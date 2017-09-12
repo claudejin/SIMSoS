@@ -227,9 +227,9 @@ public class ThesisWorld extends World {
         for (Patient patient : this.patients)
             snapshot.addProperty(patient, "Location", patient.getLocation());
 
-//        System.out.println("Time: " + this.time);
+        System.out.println("Time: " + this.time);
 //        printExpectedPatientsMap();
-//        printCurrentMap(snapshot);
+        printCurrentMap(snapshot);
 //        printBeliefMap(snapshot);
         return snapshot;
     }
@@ -375,7 +375,15 @@ public class ThesisWorld extends World {
     }
 
     public Set<Patient> getPulledoutPatients() {
-        return new HashSet<Patient>();
+        Set<Patient> pulledoutPatients = new HashSet<Patient>();
+
+        for (Patient patient : this.patients) {
+            if (patient.getStatus() == Patient.Status.Pulledout) {
+                pulledoutPatients.add(patient);
+            }
+        }
+
+        return pulledoutPatients;
     }
 
     public Set<Patient> getPulledoutPatients(Location location) {
