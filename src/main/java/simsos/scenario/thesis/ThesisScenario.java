@@ -13,8 +13,6 @@ public class ThesisScenario extends Scenario {
     public ThesisScenario(SoSType type, int nPatient, int nFireFighter, int nAmbulance, int nHospital) {
         this.world = new ThesisWorld(type, nPatient);
 
-//        this.world.addAgent(new ControlTower(this.world, "ControlTower"));
-
         for (int i = 1; i <= nFireFighter; i++)
             this.world.addAgent(new FireFighter(this.world, "FireFighter" + i));
         for (int i = 1; i <= nAmbulance; i++)
@@ -26,6 +24,9 @@ public class ThesisScenario extends Scenario {
             this.world.addAgent(new Hospital(this.world, "Hospital" + i, new Location(ThesisWorld.MAP_SIZE.getLeft() / 2, ThesisWorld.MAP_SIZE.getRight() / 2), 32));
 //        this.world.addAgent(new Hospital(this.world, "Hospital1", new Location(ThesisWorld.MAP_SIZE.getLeft() / 2-2, ThesisWorld.MAP_SIZE.getRight() / 2-2), 16));
 //        this.world.addAgent(new Hospital(this.world, "Hospital2", new Location(ThesisWorld.MAP_SIZE.getLeft() / 2+1, ThesisWorld.MAP_SIZE.getRight() / 2+1), 16));
+
+        if (type != SoSType.Virtual)
+            this.world.addAgent(new ControlTower(this.world, "ControlTower"));
 
         this.checker = null;
     }

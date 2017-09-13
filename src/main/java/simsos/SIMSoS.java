@@ -31,16 +31,17 @@ public class SIMSoS {
             }
         }
 
-        SoSType sostype = SoSType.Collaborative;
+        SoSType sostype = SoSType.Acknowledged;
 
-        Scenario scenario = new ThesisScenario(sostype, 50, 2, 0, 1);
+        Scenario scenario = new ThesisScenario(sostype, 100, 3, 0, 1);
         World world = scenario.getWorld();
 
         for (int i = 0; i < 5000; i++) {
 //            world.setSeed(1);
             world.setSeed(new Random().nextLong());
             ((ThesisWorld) world).setSoSType(sostype);
-            Simulator.execute(world
+            Simulator.execute(world, 50);
+
             ArrayList<Patient> patients = (ArrayList<Patient>) world.getResources().get("Patients");
             int numPulledout = 0;
             int numOnTransport = 0;

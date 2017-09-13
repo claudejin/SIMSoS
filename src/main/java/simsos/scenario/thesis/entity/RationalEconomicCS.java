@@ -26,6 +26,7 @@ public abstract class RationalEconomicCS extends Agent {
 
     protected ArrayList<ABCItem> immediateActionList = new ArrayList<ABCItem>();
     protected ArrayList<ABCItem> normalActionList = new ArrayList<ABCItem>();
+    protected ArrayList<ABCItem> directedNormalActionList = new ArrayList<ABCItem>();
 
     protected Comparator<ABCItem> utilityComparator = new Comparator<ABCItem>() {
         @Override
@@ -48,6 +49,7 @@ public abstract class RationalEconomicCS extends Agent {
 
     public void progress() {
         this.phase = Phase.ActiveImmediateStep;
+        this.directedNormalActionList.clear();
     }
 
     protected void updateBelief() {
@@ -98,7 +100,8 @@ public abstract class RationalEconomicCS extends Agent {
             Collections.shuffle(immediateActionList, this.world.random);
             Collections.sort(immediateActionList, utilityComparator);
             res = immediateActionList.remove(0).action;
-        } else if (normalActionList.size() > 0) {
+        } else if (normalActionList.size() > 0 || directedNormalActionList.size() > 0) {
+            normalActionList.addAll(directedNormalActionList);
             Collections.shuffle(normalActionList, this.world.random);
             Collections.sort(normalActionList, utilityComparator);
             res = normalActionList.remove(0).action;
@@ -132,7 +135,7 @@ public abstract class RationalEconomicCS extends Agent {
     };
 
     public void receiveMessage(Message message) {
-        if (message.purpose == Message.Purpose.ReqInfo || message.purpose == Message.Purpose.ReqAction)
+        if (message.purpose == Message.Purpose.ReqInfo || message.purpose == Message.Purpose.ReqAction || message.purpose == Message.Purpose.Order)
             this.incomingRequests.add(message);
         else
             this.incomingInformation.add(message);

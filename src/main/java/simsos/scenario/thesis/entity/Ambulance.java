@@ -94,9 +94,7 @@ public class Ambulance extends RationalEconomicCS {
         // Set a target patient at this location
         if (this.targetPatient == null) {
             switch ((SoSType) this.world.getResources().get("Type")) {
-                case Acknowledged:
-                case Collaborative:
-                case Virtual:
+                default:
                     this.immediateActionList.add(new ABCItem(new SetTargetPatient(null), 5, 0));
                     this.immediateActionList.add(new ABCItem(this.pickUpAndStartTransport, 4, 0));
             }
@@ -134,37 +132,30 @@ public class Ambulance extends RationalEconomicCS {
 
     @Override
     protected void generateNormalActions() {
-        // N-Directed Moves
-        if (this.world.getResources().get("Type") == SoSType.Directed) {
-
-        }
-
         // N-Autonomous Moves
-        if (this.world.getResources().get("Type") != SoSType.Directed) {
-            // Search for patient to transport
-            if (this.targetPatient == null) {
-                // Random search
-                if (Ambulance.this.location.getX() > 0 && lastDirection != Direction.RIGHT)
-                    normalActionList.add(new ABCItem(new Move(Direction.LEFT), 0, calculateMoveCost(Direction.LEFT)));
-                if (Ambulance.this.location.getX() < ThesisWorld.MAP_SIZE.getLeft() - 1 && lastDirection != Direction.LEFT)
-                    normalActionList.add(new ABCItem(new Move(Direction.RIGHT), 0, calculateMoveCost(Direction.RIGHT)));
-                if (Ambulance.this.location.getY() > 0 && lastDirection != Direction.DOWN)
-                    normalActionList.add(new ABCItem(new Move(Direction.UP), 0, calculateMoveCost(Direction.UP)));
-                if (Ambulance.this.location.getY() < ThesisWorld.MAP_SIZE.getRight() - 1 && lastDirection != Direction.UP)
-                    normalActionList.add(new ABCItem(new Move(Direction.DOWN), 0, calculateMoveCost(Direction.DOWN)));
+        // Search for patient to transport
+        if (this.targetPatient == null) {
+            // Random search
+            if (Ambulance.this.location.getX() > 0 && lastDirection != Direction.RIGHT)
+                normalActionList.add(new ABCItem(new Move(Direction.LEFT), 0, calculateMoveCost(Direction.LEFT)));
+            if (Ambulance.this.location.getX() < ThesisWorld.MAP_SIZE.getLeft() - 1 && lastDirection != Direction.LEFT)
+                normalActionList.add(new ABCItem(new Move(Direction.RIGHT), 0, calculateMoveCost(Direction.RIGHT)));
+            if (Ambulance.this.location.getY() > 0 && lastDirection != Direction.DOWN)
+                normalActionList.add(new ABCItem(new Move(Direction.UP), 0, calculateMoveCost(Direction.UP)));
+            if (Ambulance.this.location.getY() < ThesisWorld.MAP_SIZE.getRight() - 1 && lastDirection != Direction.UP)
+                normalActionList.add(new ABCItem(new Move(Direction.DOWN), 0, calculateMoveCost(Direction.DOWN)));
 
-            // Heading to the patient to transport
-            // OR Heading to the hospital to deliever
-            } else {
-                if (Ambulance.this.location.getX() > 0)
-                    normalActionList.add(new ABCItem(new Move(Direction.LEFT), 0, calculateMoveCost(Direction.LEFT)));
-                if (Ambulance.this.location.getX() < ThesisWorld.MAP_SIZE.getLeft() - 1)
-                    normalActionList.add(new ABCItem(new Move(Direction.RIGHT), 0, calculateMoveCost(Direction.RIGHT)));
-                if (Ambulance.this.location.getY() > 0)
-                    normalActionList.add(new ABCItem(new Move(Direction.UP), 0, calculateMoveCost(Direction.UP)));
-                if (Ambulance.this.location.getY() < ThesisWorld.MAP_SIZE.getRight() - 1)
-                    normalActionList.add(new ABCItem(new Move(Direction.DOWN), 0, calculateMoveCost(Direction.DOWN)));
-            }
+        // Heading to the patient to transport
+        // OR Heading to the hospital to deliever
+        } else {
+            if (Ambulance.this.location.getX() > 0)
+                normalActionList.add(new ABCItem(new Move(Direction.LEFT), 0, calculateMoveCost(Direction.LEFT)));
+            if (Ambulance.this.location.getX() < ThesisWorld.MAP_SIZE.getLeft() - 1)
+                normalActionList.add(new ABCItem(new Move(Direction.RIGHT), 0, calculateMoveCost(Direction.RIGHT)));
+            if (Ambulance.this.location.getY() > 0)
+                normalActionList.add(new ABCItem(new Move(Direction.UP), 0, calculateMoveCost(Direction.UP)));
+            if (Ambulance.this.location.getY() < ThesisWorld.MAP_SIZE.getRight() - 1)
+                normalActionList.add(new ABCItem(new Move(Direction.DOWN), 0, calculateMoveCost(Direction.DOWN)));
         }
     }
 

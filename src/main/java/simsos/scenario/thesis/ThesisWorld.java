@@ -78,14 +78,11 @@ public class ThesisWorld extends World {
         HashMap<String, Location> hospitalLocations = new HashMap<String, Location>();
         HashMap<String, Integer> hospitalCapacities = new HashMap<String, Integer>();
         for (Agent agent : this.agents)
-            if (agent instanceof Hospital) {
-                hospitalLocations.put(agent.getName(), (Location) agent.getProperties().get("Location"));
-                hospitalCapacities.put(agent.getName(), (int) agent.getProperties().get("Capacity"));
-            }
-
-        for (Agent agent : this.agents)
             if (agent instanceof Ambulance) {
                 ((Ambulance) agent).setHospitalInformation(hospitalLocations, hospitalCapacities);
+            } else if (agent instanceof Hospital) {
+                hospitalLocations.put(agent.getName(), (Location) agent.getProperties().get("Location"));
+                hospitalCapacities.put(agent.getName(), (int) agent.getProperties().get("Capacity"));
             }
     }
 
@@ -98,11 +95,11 @@ public class ThesisWorld extends World {
                 ((RationalEconomicCS) agent).progress();
     }
 
-    private boolean checkValidLocation(Location location) {
+    public boolean checkValidLocation(Location location) {
         return checkValidLocation(location.getX(), location.getY());
     }
 
-    private boolean checkValidLocation(int x, int y) {
+    public boolean checkValidLocation(int x, int y) {
         if (x < 0 || x > MAP_SIZE.getLeft() - 1)
             return false;
         if (y < 0 || y > MAP_SIZE.getRight() - 1)
@@ -124,13 +121,13 @@ public class ThesisWorld extends World {
     }
 
     private void generateExpectedPatientsMap() {
-        NormalDistribution xND = new NormalDistribution(MAP_SIZE.getLeft() / 2, 1.5);
-        NormalDistribution yND = new NormalDistribution(MAP_SIZE.getLeft() / 2, 1.5);
+        NormalDistribution xND = new NormalDistribution(MAP_SIZE.getLeft() / 2, MAP_SIZE.getLeft() / 4);
+        NormalDistribution yND = new NormalDistribution(MAP_SIZE.getRight() / 2, MAP_SIZE.getRight() / 4);
 
         for (int x = 0; x < MAP_SIZE.getLeft(); x++)
             for (int y = 0; y < MAP_SIZE.getRight(); y++) {
                 double xProb = xND.cumulativeProbability(x) - xND.cumulativeProbability(x - 1);
-                double nX = xProb * this.nPatient;
+                double nX = xProb * MAP_SIZE.getLeft() * MAP_SIZE.getRight();
 
                 double yProb = xND.cumulativeProbability(y) - xND.cumulativeProbability(y - 1);
                 int nXY = (int) Math.round(yProb * nX);
@@ -166,7 +163,6 @@ public class ThesisWorld extends World {
         HashMap<String, Object> resources = new HashMap<String, Object>();
         resources.put("Time", this.time);
         resources.put("Type", this.type);
-        resources.put("Agents", this.agents);
         resources.put("Patients", this.patients);
         resources.put("ExpectedPatientsMap", this.expectedPatientsMap);
 
@@ -400,17 +396,26 @@ public class ThesisWorld extends World {
 
         return pulledoutPatients;
     }
-    public Patient getTrappedPatient(Location location) {
+
+    public ArrayList<Patient> getTrappedPatients(Location location) {
+        ArrayList<Patient> patients = this.patientsMap.getValue(location);
+        ArrayList<Patient> trappedPatients = new ArrayList<Patient>();
+
+        for (Patient patient : patients)
+            if (patient.getStatus() == Patient.Status.Trapped)
+                trappedPatients.add(patient);
+
+        return trappedPatients;
+    }
+
+    public int getNumberOfTrappedPatient(Location location) {
         ArrayList<Patient> patients = this.patientsMap.getValue(location);
 
-        for (Patient patient : patients) {
-            if (patient.getStatus() == Patient.Status.Initial) {
-                patient.setStatus(Patient.Status.Pulledout);
+        int numTrapped = 0;
+        for (Patient patient : patients)
+            if (patient.getStatus() == Patient.Status.Trapped)
+                numTrapped++;
 
-                return patient;
-            }
-        }
-
-        return null;
+        return numTrapped;
     }
 }
