@@ -62,16 +62,9 @@ public class Ambulance extends RationalEconomicCS {
                     this.status = Status.EMPTY;
                     this.lastDirection = Direction.NONE;
                 } else {
-
+                    this.headingLocation = this.getBestHospitalLocation();
+                    this.lastDirection = Direction.NONE;
                 }
-
-            // Patient set request from ControlTower
-            } else if (message.sender.equals("ControlTower") && message.purpose == Message.Purpose.ReqAction && message.data.containsKey("Patient")) {
-//                this.immediateActionList.add(new ABCItem(new SetTargetPatient(some patient), 0, 0));
-
-            // Patient set order from ControlTower
-            } else if (message.sender.equals("ControlTower") && message.purpose == Message.Purpose.Order && message.data.containsKey("Patient")) {
-//                this.immediateActionList.add(new ABCItem(new SetTargetPatient(some patient), 11, 0));
             }
         }
     }
@@ -137,31 +130,30 @@ public class Ambulance extends RationalEconomicCS {
         if (this.targetPatient == null) {
             // Random search
             if (Ambulance.this.location.getX() > 0 && lastDirection != Direction.RIGHT)
-                normalActionList.add(new ABCItem(new Move(Direction.LEFT), 0, calculateMoveCost(Direction.LEFT)));
+                normalActionList.add(new ABCItem(new Move(Direction.LEFT), 0, calculateMoveCost(Direction.LEFT, false)));
             if (Ambulance.this.location.getX() < ThesisWorld.MAP_SIZE.getLeft() - 1 && lastDirection != Direction.LEFT)
-                normalActionList.add(new ABCItem(new Move(Direction.RIGHT), 0, calculateMoveCost(Direction.RIGHT)));
+                normalActionList.add(new ABCItem(new Move(Direction.RIGHT), 0, calculateMoveCost(Direction.RIGHT, false)));
             if (Ambulance.this.location.getY() > 0 && lastDirection != Direction.DOWN)
-                normalActionList.add(new ABCItem(new Move(Direction.UP), 0, calculateMoveCost(Direction.UP)));
+                normalActionList.add(new ABCItem(new Move(Direction.UP), 0, calculateMoveCost(Direction.UP, false)));
             if (Ambulance.this.location.getY() < ThesisWorld.MAP_SIZE.getRight() - 1 && lastDirection != Direction.UP)
-                normalActionList.add(new ABCItem(new Move(Direction.DOWN), 0, calculateMoveCost(Direction.DOWN)));
+                normalActionList.add(new ABCItem(new Move(Direction.DOWN), 0, calculateMoveCost(Direction.DOWN, false)));
 
         // Heading to the patient to transport
         // OR Heading to the hospital to deliever
         } else {
             if (Ambulance.this.location.getX() > 0)
-                normalActionList.add(new ABCItem(new Move(Direction.LEFT), 0, calculateMoveCost(Direction.LEFT)));
+                normalActionList.add(new ABCItem(new Move(Direction.LEFT), 0, calculateMoveCost(Direction.LEFT, true)));
             if (Ambulance.this.location.getX() < ThesisWorld.MAP_SIZE.getLeft() - 1)
-                normalActionList.add(new ABCItem(new Move(Direction.RIGHT), 0, calculateMoveCost(Direction.RIGHT)));
+                normalActionList.add(new ABCItem(new Move(Direction.RIGHT), 0, calculateMoveCost(Direction.RIGHT, true)));
             if (Ambulance.this.location.getY() > 0)
-                normalActionList.add(new ABCItem(new Move(Direction.UP), 0, calculateMoveCost(Direction.UP)));
+                normalActionList.add(new ABCItem(new Move(Direction.UP), 0, calculateMoveCost(Direction.UP, true)));
             if (Ambulance.this.location.getY() < ThesisWorld.MAP_SIZE.getRight() - 1)
-                normalActionList.add(new ABCItem(new Move(Direction.DOWN), 0, calculateMoveCost(Direction.DOWN)));
+                normalActionList.add(new ABCItem(new Move(Direction.DOWN), 0, calculateMoveCost(Direction.DOWN, true)));
         }
     }
 
-    public int calculateMoveCost(Direction direction) {
-        // Uncertainty
-        int totalCost = this.world.random.nextInt(2);
+    public int calculateMoveCost(Direction direction, boolean headingTo) {
+        int totalCost = 0;
 
         int deltaX, deltaY;
         if (direction == Direction.LEFT) {
@@ -174,8 +166,12 @@ public class Ambulance extends RationalEconomicCS {
             deltaX = 0; deltaY = 1;
         }
 
-        if (this.headingLocation != null)
+        if (headingTo) {
             totalCost += this.headingLocation.distanceTo(this.location.add(deltaX, deltaY));
+        } else {
+            // Uncertainty
+            totalCost += this.world.random.nextInt(2);
+        }
 
         return totalCost;
     }
@@ -220,9 +216,10 @@ public class Ambulance extends RationalEconomicCS {
             if (Ambulance.this.targetPatient != null)
                 return;
 
-            if (this.targetPatient != null)
+            if (this.targetPatient != null) {
                 Ambulance.this.targetPatient = this.targetPatient;
-            else {
+                Ambulance.this.headingLocation = new Location(this.targetPatient.getLocation());
+            } else {
                 Set<Patient> pulledoutPatients = ((ThesisWorld) Ambulance.this.world).getPulledoutPatients();
 
                 if (!pulledoutPatients.isEmpty()) {

@@ -78,11 +78,14 @@ public class ThesisWorld extends World {
         HashMap<String, Location> hospitalLocations = new HashMap<String, Location>();
         HashMap<String, Integer> hospitalCapacities = new HashMap<String, Integer>();
         for (Agent agent : this.agents)
-            if (agent instanceof Ambulance) {
-                ((Ambulance) agent).setHospitalInformation(hospitalLocations, hospitalCapacities);
-            } else if (agent instanceof Hospital) {
+            if (agent instanceof Hospital) {
                 hospitalLocations.put(agent.getName(), (Location) agent.getProperties().get("Location"));
                 hospitalCapacities.put(agent.getName(), (int) agent.getProperties().get("Capacity"));
+            }
+
+        for (Agent agent : this.agents)
+            if (agent instanceof Ambulance) {
+                ((Ambulance) agent).setHospitalInformation(hospitalLocations, hospitalCapacities);
             }
     }
 
