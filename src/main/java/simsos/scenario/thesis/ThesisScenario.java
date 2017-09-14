@@ -8,7 +8,7 @@ import simsos.scenario.thesis.util.Location;
 import simsos.simulation.component.Scenario;
 
 public class ThesisScenario extends Scenario {
-    public enum SoSType {Directed, Acknowledged, Collaborative, Virtual}
+    public enum SoSType {Virtual, Collaborative, Acknowledged, Directed}
 
     public ThesisScenario(SoSType type, int nPatient, int nFireFighter, int nAmbulance, int nHospital) {
         this.world = new ThesisWorld(type, nPatient);

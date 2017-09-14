@@ -23,6 +23,7 @@ public class FireFighter extends RationalEconomicCS {
     private Direction lastDirection;
 
     private enum Status {Pullout, Complete}
+    private int idleTime;
     private Status status;
 
     private Patient pulledoutPatient = null;
@@ -127,7 +128,8 @@ public class FireFighter extends RationalEconomicCS {
                 Location newLocation = (Location) message.data.get("HeadingLocation");
 
                 if (this.headingLocation == null && this.status == Status.Complete) {
-                    if (this.world.random.nextInt(4) < 2) {
+//                    if (this.world.random.nextInt(4) < 2) {
+                    if (this.idleTime >= 3) {
                         this.headingLocation = newLocation;
                         this.headingBenefit = (Integer) message.data.get("AdditionalBenefit");
                         accepted = true;
@@ -227,6 +229,7 @@ public class FireFighter extends RationalEconomicCS {
                 this.beliefMap.setValue(x, y, false);
 
         this.status = Status.Pullout;
+        this.idleTime = 0;
         this.location.setLocation(ThesisWorld.MAP_SIZE.getLeft() / 2, ThesisWorld.MAP_SIZE.getRight() / 2);
 
         this.lastDirection = Direction.NONE;
@@ -265,8 +268,12 @@ public class FireFighter extends RationalEconomicCS {
             if (trappedPatients.size() > 0) {
                 FireFighter.this.pulledoutPatient = trappedPatients.get(0);
                 pulledoutPatient.setStatus(Patient.Status.Pulledout);
+                FireFighter.this.idleTime = 0;
+//                System.out.println(FireFighter.this.getName() + ": idle time reset");
             } else {
                 FireFighter.this.pulledoutPatient = null;
+                FireFighter.this.idleTime++;
+//                System.out.println(FireFighter.this.getName() + ": idle " + FireFighter.this.idleTime + " times");
             }
         }
 

@@ -31,12 +31,12 @@ public class SIMSoS {
             }
         }
 
-        SoSType sostype = SoSType.Virtual;
+        SoSType sostype = SoSType.Acknowledged;
 
-        Scenario scenario = new ThesisScenario(sostype, 100, 3, 3, 1);
+        Scenario scenario = new ThesisScenario(sostype, 100, 3, 0, 1);
         World world = scenario.getWorld();
 
-        for (int i = 0; i < 1; i++) {
+        for (int i = 0; i < 5000; i++) {
 //            world.setSeed(1);
             world.setSeed(new Random().nextLong());
             ((ThesisWorld) world).setSoSType(sostype);

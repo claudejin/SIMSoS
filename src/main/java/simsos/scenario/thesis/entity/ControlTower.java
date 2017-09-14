@@ -95,6 +95,9 @@ public class ControlTower extends RationalEconomicCS {
                             if (!this.pulloutBeliefMap.getValue(x, y))
                                 targetLocations.add(new Location(x, y));
 
+                    if (targetLocations.size() == 0)
+                        break;
+
                     Collections.shuffle(targetLocations, this.world.random);
                     targetLocations.sort(new Comparator<Location>() {
 
