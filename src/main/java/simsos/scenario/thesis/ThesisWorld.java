@@ -34,7 +34,7 @@ public class ThesisWorld extends World {
     public SoSType type = null;
     public final int nPatient;
 
-    public static final Pair<Integer, Integer> MAP_SIZE = new Pair<Integer, Integer>(19, 19);
+    public static final Pair<Integer, Integer> MAP_SIZE = new Pair<Integer, Integer>(49, 49);
     public final Maptrix<Integer> expectedPatientsMap = new Maptrix<Integer>(Integer.TYPE, MAP_SIZE.getLeft(), MAP_SIZE.getRight());
     public final Maptrix<ArrayList> patientsMap = new Maptrix<ArrayList>(ArrayList.class, MAP_SIZE.getLeft(), MAP_SIZE.getRight());
 
@@ -145,8 +145,8 @@ public class ThesisWorld extends World {
 
         boolean stoppingCondition = false;
         while (!stoppingCondition) {
-            x = (int) Math.round(this.random.nextGaussian() * 1.5 + MAP_SIZE.getLeft() / 2);
-            y = (int) Math.round(this.random.nextGaussian() * 1.5 + MAP_SIZE.getLeft() / 2);
+            x = (int) Math.round(this.random.nextGaussian() * (MAP_SIZE.getLeft() / 4) + MAP_SIZE.getLeft() / 2);
+            y = (int) Math.round(this.random.nextGaussian() * (MAP_SIZE.getRight() / 4) + MAP_SIZE.getRight() / 2);
             location = new Location(x, y);
 
             if (!checkValidLocation(location))
@@ -216,15 +216,17 @@ public class ThesisWorld extends World {
 
     @Override
     public Snapshot getCurrentSnapshot() {
-        Snapshot snapshot = super.getCurrentSnapshot();
+//        Snapshot snapshot = super.getCurrentSnapshot();
+        Snapshot snapshot = new Snapshot();
 
         LinkedHashMap<String, Object> worldProperties = new LinkedHashMap<String, Object>();
 
-        worldProperties.put("Time", this.time);
+//        worldProperties.put("Time", this.time);
+        worldProperties.put("Pulledout", getPulledoutPatients().size());
         snapshot.addProperties(null, worldProperties);
 
-        for (Patient patient : this.patients)
-            snapshot.addProperty(patient, "Location", patient.getLocation());
+//        for (Patient patient : this.patients)
+//            snapshot.addProperty(patient, "Location", patient.getLocation());
 
 //        System.out.println("Time: " + this.time);
 //        printExpectedPatientsMap();

@@ -47,13 +47,22 @@ public class FireFighter extends RationalEconomicCS {
             if (message.sender.startsWith("ControlTower") && message.purpose == Message.Purpose.Delivery && message.data.containsKey("PulloutBelief")) {
                 Maptrix<Boolean> othersBeliefMap = (Maptrix<Boolean>) message.data.get("PulloutBelief");
 
-                boolean localBelief = false;
+                boolean localBelief;
                 for (int x = 0; x < ThesisWorld.MAP_SIZE.getLeft(); x++)
                     for (int y = 0; y < ThesisWorld.MAP_SIZE.getRight(); y++) {
-                        localBelief = this.beliefMap.getValue(x, y);
-                        localBelief = localBelief || othersBeliefMap.getValue(x, y);
-                        this.beliefMap.setValue(x, y, localBelief);
+                        Location location = new Location(x, y);
+                        localBelief = this.beliefMap.getValue(location);
+                        localBelief = localBelief || othersBeliefMap.getValue(location);
+                        this.beliefMap.setValue(location, localBelief);
                     }
+
+                switch ((SoSType) this.world.getResources().get("Type")) {
+                    case Collaborative:
+                    case Virtual:
+                        if (this.headingLocation != null)
+                            if (this.beliefMap.getValue(this.headingLocation))
+                                this.headingLocation = null;
+                }
             }
         }
     }
@@ -75,6 +84,15 @@ public class FireFighter extends RationalEconomicCS {
                 beliefShare.data.put("PulloutLocation", this.location);
 
                 this.immediateActionList.add(new ABCItem(new SendMessage(beliefShare), 9, 1));
+        }
+
+        // Set heading location to incomplete area
+        switch ((SoSType) this.world.getResources().get("Type")) {
+            case Acknowledged:
+            case Collaborative:
+            case Virtual:
+                if (this.idleTime >= 4)
+                    this.immediateActionList.add(new ABCItem(this.setHeadingLocation, 5, 0));
         }
 
 //        // I-Share to other FireFighters
@@ -128,8 +146,7 @@ public class FireFighter extends RationalEconomicCS {
                 Location newLocation = (Location) message.data.get("HeadingLocation");
 
                 if (this.headingLocation == null && this.status == Status.Complete) {
-//                    if (this.world.random.nextInt(4) < 2) {
-                    if (this.idleTime >= 3) {
+                    if (this.idleTime >= 4 && this.world.random.nextInt(4) < 2) {
                         this.headingLocation = newLocation;
                         this.headingBenefit = (Integer) message.data.get("AdditionalBenefit");
                         accepted = true;
@@ -187,26 +204,32 @@ public class FireFighter extends RationalEconomicCS {
         }
     }
 
-    public int calculateMoveCost(Direction direction, boolean headingTo) {
+    public int calculateMoveCost(Direction direction, boolean directMove) {
         if (direction == Direction.LEFT)
-            return calculateMoveCost(-1, 0, headingTo);
+            return calculateMoveCost(-1, 0, directMove);
         else if (direction == Direction.RIGHT)
-            return calculateMoveCost(1, 0, headingTo);
+            return calculateMoveCost(1, 0, directMove);
         else if (direction == Direction.UP)
-            return calculateMoveCost(0, -1, headingTo);
+            return calculateMoveCost(0, -1, directMove);
         else
-            return calculateMoveCost(0, 1, headingTo);
+            return calculateMoveCost(0, 1, directMove);
     }
 
-    public int calculateMoveCost(int deltaX, int deltaY, boolean headingTo) {
+    public int calculateMoveCost(int deltaX, int deltaY, boolean directMove) {
         Location nextLocation = this.location.add(deltaX, deltaY);
-        return calculateMoveCost(nextLocation, headingTo);
+        return calculateMoveCost(nextLocation, directMove);
     }
 
-    public int calculateMoveCost(Location nextLocation, boolean headingTo) {
+    public int calculateMoveCost(Location nextLocation, boolean directMove) {
         int totalCost = 0;
 
-        if (headingTo && this.headingLocation != null) {
+        if (directMove && this.headingLocation != null) {
+            // Headindg cost
+            totalCost += nextLocation.distanceTo(this.headingLocation);
+        } else if (this.headingLocation != null) {
+            // Uncertainty
+            totalCost += this.world.random.nextInt(8);
+
             // Headindg cost
             totalCost += nextLocation.distanceTo(this.headingLocation);
         } else {
@@ -230,7 +253,8 @@ public class FireFighter extends RationalEconomicCS {
 
         this.status = Status.Pullout;
         this.idleTime = 0;
-        this.location.setLocation(ThesisWorld.MAP_SIZE.getLeft() / 2, ThesisWorld.MAP_SIZE.getRight() / 2);
+//        this.location.setLocation(ThesisWorld.MAP_SIZE.getLeft() / 2, ThesisWorld.MAP_SIZE.getRight() / 2);
+        this.location.setLocation(0,0);
 
         this.lastDirection = Direction.NONE;
         this.pulledoutPatient = null;
@@ -271,6 +295,7 @@ public class FireFighter extends RationalEconomicCS {
                 FireFighter.this.idleTime = 0;
 //                System.out.println(FireFighter.this.getName() + ": idle time reset");
             } else {
+                FireFighter.this.beliefMap.setValue(FireFighter.this.location, true);
                 FireFighter.this.pulledoutPatient = null;
                 FireFighter.this.idleTime++;
 //                System.out.println(FireFighter.this.getName() + ": idle " + FireFighter.this.idleTime + " times");
@@ -283,7 +308,56 @@ public class FireFighter extends RationalEconomicCS {
         }
     };
 
-    protected class Move extends Action {
+    private final Action setHeadingLocation = new Action(0) {
+
+        @Override
+        public void execute() {
+            if (FireFighter.this.headingLocation == null) {
+                int mapX = ((ThesisWorld) FireFighter.this.world).MAP_SIZE.getLeft();
+                int mapY = ((ThesisWorld) FireFighter.this.world).MAP_SIZE.getRight();
+
+                ArrayList<Location> targetLocations = new ArrayList<Location>();
+                for (int x = 0; x < mapX; x++)
+                    for (int y = 0; y < mapY; y++)
+                        if (!FireFighter.this.beliefMap.getValue(x, y))
+                            targetLocations.add(new Location(x, y));
+
+                if (targetLocations.size() == 0)
+                    return;
+
+                Collections.shuffle(targetLocations, FireFighter.this.world.random);
+                targetLocations.sort(new Comparator<Location>() {
+
+                    @Override
+                    public int compare(Location o1, Location o2) {
+                        int v1 = calculateMoveCost(FireFighter.this.location, o1);
+                        int v2 = calculateMoveCost(FireFighter.this.location, o2);
+
+                        return v1 - v2;
+                    }
+                });
+
+                FireFighter.this.headingLocation = targetLocations.get(0);
+            }
+        }
+
+        @Override
+        public String getName() {
+            return FireFighter.this.getName() + ": Set heading location to incomplete area";
+        }
+    };
+
+    public int calculateMoveCost(Location currentLocation, Location headingLocation) {
+        int totalCost = 0;
+        // Distance cost
+        totalCost += currentLocation.distanceTo(headingLocation);
+        // Belief cost
+        totalCost -= this.expectedPatientsMap.getValue(headingLocation.getX(), headingLocation.getY()) * 4;
+
+        return totalCost;
+    }
+
+    private class Move extends Action {
         Direction direction = Direction.NONE;
 
         public Move(Direction direction) {
