@@ -65,6 +65,11 @@ public class ThesisRunner {
             System.out.println("Done!");
 //            System.out.println("Completeness: " + (maxTrial - cntFailure) + "/" + maxTrial);
         }
+
+        Date nowDate = new Date();
+        SimpleDateFormat transFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        String pre = transFormat.format(nowDate);
+        System.out.println(pre);
     }
 
     private static void writeTrace(List<Snapshot> trace, String filename) {

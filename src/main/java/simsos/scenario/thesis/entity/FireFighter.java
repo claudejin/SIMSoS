@@ -146,7 +146,7 @@ public class FireFighter extends RationalEconomicCS {
                 Location newLocation = (Location) message.data.get("HeadingLocation");
 
                 if (this.headingLocation == null && this.status == Status.Complete) {
-                    if (this.idleTime >= 4 && this.world.random.nextInt(4) < 2) {
+                    if (this.idleTime >= 4) {
                         this.headingLocation = newLocation;
                         this.headingBenefit = (Integer) message.data.get("AdditionalBenefit");
                         accepted = true;
@@ -223,9 +223,12 @@ public class FireFighter extends RationalEconomicCS {
     public int calculateMoveCost(Location nextLocation, boolean directMove) {
         int totalCost = 0;
 
+        // Directed or Acknowledged
         if (directMove && this.headingLocation != null) {
             // Headindg cost
             totalCost += nextLocation.distanceTo(this.headingLocation);
+
+        // Voluntary heading location
         } else if (this.headingLocation != null) {
             // Uncertainty
             totalCost += this.world.random.nextInt(8);
