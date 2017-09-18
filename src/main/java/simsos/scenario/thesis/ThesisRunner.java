@@ -28,29 +28,43 @@ public class ThesisRunner {
         int minTrial = 1;
         int maxTrial = 5000;
 
-        // For all SoS types
-        for (ThesisScenario.SoSType sostype : ThesisScenario.SoSType.values()) {
-            System.out.println(sostype);
-            Scenario scenario = new ThesisScenario(sostype, nPatient, nFireFighter, 0, 0);
-            World world = scenario.getWorld();
+        long startTime;
 
-            Date nowDate = new Date();
-            SimpleDateFormat transFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-            String pre = transFormat.format(nowDate);
-            System.out.println(pre);
+        try {
+            File file = new File(String.format("traces/%dF_simulation_lengths.csv", nFireFighter));
+            BufferedWriter bw = new BufferedWriter(new FileWriter(file));
+
+            // For all SoS types
+            for (ThesisScenario.SoSType sostype : ThesisScenario.SoSType.values()) {
+                System.out.println(sostype);
+                Scenario scenario = new ThesisScenario(sostype, nPatient, nFireFighter, 0, 0);
+                World world = scenario.getWorld();
+
+                Date nowDate = new Date();
+                SimpleDateFormat transFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                String pre = transFormat.format(nowDate);
+                System.out.println(pre);
 
 //            cntFailure = 0;
-            for (int i = minTrial; i <= maxTrial; i++) {
-                world.setSeed(new Random().nextLong());
-                ((ThesisWorld) world).setSoSType(sostype);
-                ArrayList<Snapshot> trace = Simulator.execute(world, endTick);
-                writeTrace(trace, String.format("traces/%dF/%s_%dF_%04d.txt", nFireFighter, sostype, nFireFighter, i));
+                for (int i = minTrial; i <= maxTrial; i++) {
+                    world.setSeed(new Random().nextLong());
+                    ((ThesisWorld) world).setSoSType(sostype);
+
+                    startTime = System.currentTimeMillis();
+
+                    ArrayList<Snapshot> trace = Simulator.execute(world, endTick);
+
+                    bw.write(sostype.toString() + "," + (System.currentTimeMillis() - startTime));
+                    bw.newLine();
+                    bw.flush();
+
+                    writeTrace(trace, String.format("traces/%dF/%s_%dF_%04d.txt", nFireFighter, sostype, nFireFighter, i));
 //                if ((int) world.getCurrentSnapshot().getProperties().get(0).value != nPatient) {
 //                    cntFailure++;
 //                    System.out.println("Failure" + world.getCurrentSnapshot().getProperties().get(0).value);
 //                }
-                if (i % 250 == 0)
-                    System.out.println(i);
+                    if (i % 250 == 0)
+                        System.out.println(i);
 //                ArrayList<Patient> patients = (ArrayList<Patient>) world.getResources().get("Patients");
 //                int numPulledout = 0;
 //
@@ -61,9 +75,14 @@ public class ThesisRunner {
 //                System.out.println(Math.round((float) numPulledout / patients.size() * 100));
 //                if (numPulledout == patients.size())
 //                    cntComplete++;
-            }
-            System.out.println("Done!");
+                }
+                System.out.println("Done!");
 //            System.out.println("Completeness: " + (maxTrial - cntFailure) + "/" + maxTrial);
+            }
+
+            bw.close();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
 
         Date nowDate = new Date();
