@@ -1,6 +1,7 @@
 package simsos.scenario.thesis.entity;
 
 import com.sun.org.apache.xpath.internal.operations.Bool;
+import kiise2016.SoS;
 import simsos.scenario.thesis.ThesisScenario.SoSType;
 import simsos.scenario.thesis.ThesisWorld;
 import simsos.scenario.thesis.util.*;
@@ -69,52 +70,26 @@ public class FireFighter extends RationalEconomicCS {
 
     @Override
     protected void generateActiveImmediateActions() {
-        // Pullout patients at this location
-        switch ((SoSType) this.world.getResources().get("Type")) {
-            default:
-                // Do pullout patients at this location
-                this.immediateActionList.add(new ABCItem(this.pulloutPatient, 10, 1));
+        // Do pullout patients at this location
+        this.immediateActionList.add(new ABCItem(this.pulloutPatient, 10, 1));
 
-                // Report pullout belief to others
-                Message beliefShare = new Message();
-                beliefShare.name = "Report Pullout belief";
-                beliefShare.sender = this.getName();
-                beliefShare.receiver = "ControlTower";
-                beliefShare.purpose = Message.Purpose.Delivery;
-                beliefShare.data.put("PulloutLocation", this.location);
+        if ((SoSType) this.world.getResources().get("Type") != SoSType.Virtual) {
+            // Report pullout belief to others
+            Message beliefShare = new Message();
+            beliefShare.name = "Report Pullout belief";
+            beliefShare.sender = this.getName();
+            beliefShare.receiver = "ControlTower";
+            beliefShare.purpose = Message.Purpose.Delivery;
+            beliefShare.data.put("PulloutLocation", this.location);
 
-                this.immediateActionList.add(new ABCItem(new SendMessage(beliefShare), 9, 1));
+            this.immediateActionList.add(new ABCItem(new SendMessage(beliefShare), 9, 1));
         }
 
         // Set heading location to incomplete area
-        switch ((SoSType) this.world.getResources().get("Type")) {
-            case Acknowledged:
-            case Collaborative:
-            case Virtual:
-                if (this.idleTime >= 4)
-                    this.immediateActionList.add(new ABCItem(this.setHeadingLocation, 5, 0));
+        if ((SoSType) this.world.getResources().get("Type") != SoSType.Directed) {
+            if (this.idleTime >= 4)
+                this.immediateActionList.add(new ABCItem(this.setHeadingLocation, 5, 0));
         }
-
-//        // I-Share to other FireFighters
-//        if ((SoSType) this.world.getResources().get("Type") !=  SoSType.Virtual) {
-//                Message beliefShare = new Message();
-//                beliefShare.name = "Share Pullout belief";
-//                beliefShare.sender = this.getName();
-//                beliefShare.receiver = "FireFighter";
-////                beliefShare.location = this.location;
-//                beliefShare.purpose = Message.Purpose.Delivery;
-//                beliefShare.data.put("PulloutBelief", this.beliefMap);
-//
-//                this.immediateActionList.add(new ABCItem(new SendMessage(beliefShare), 5, 1));
-//        }
-//
-//        // Report to ControlTower
-//        switch ((SoSType) this.world.getResources().get("Type")) {
-//            case Directed:
-//            case Acknowledged:
-//
-//                break;
-//        }
     }
 
     @Override
@@ -256,7 +231,6 @@ public class FireFighter extends RationalEconomicCS {
 
         this.status = Status.Pullout;
         this.idleTime = 0;
-//        this.location.setLocation(ThesisWorld.MAP_SIZE.getLeft() / 2, ThesisWorld.MAP_SIZE.getRight() / 2);
         this.location.setLocation(0,0);
 
         this.lastDirection = Direction.NONE;
@@ -277,7 +251,6 @@ public class FireFighter extends RationalEconomicCS {
     public HashMap<String, Object> getProperties() {
         HashMap<String, Object> properties = new HashMap<String, Object>();
         properties.put("Location", this.location);
-//        properties.put("PulloutBeliefMap", this.beliefMap);
         return properties;
     }
 
