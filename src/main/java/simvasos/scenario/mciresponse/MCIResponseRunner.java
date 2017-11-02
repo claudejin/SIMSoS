@@ -3,6 +3,7 @@ package simvasos.scenario.mciresponse;
 import simvasos.simulation.Simulator;
 import simvasos.simulation.analysis.Snapshot;
 import simvasos.simulation.component.Scenario;
+import simvasos.scenario.mciresponse.MCIResponseScenario.SoSType;
 import simvasos.simulation.component.World;
 
 import java.io.BufferedWriter;
@@ -17,90 +18,79 @@ import java.util.Random;
 
 public class MCIResponseRunner {
     public static void main(String[] args) {
-        int endTick = 8000;
+        SimpleDateFormat datetimeFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
-        int nPatient = 100;
-        int nFireFighter = 3;
-
-        int cntFailure;
+        String testSession = "ABCPlus_AllTypes";
+        int endTick = 7500; // 8000
         int minTrial = 1;
-        int maxTrial = 100;
-
-        long startTime;
-        long duration;
+        int maxTrial = 1000;
 
         try {
-            File file = new File(String.format("traces/%dF_simulation_lengths.csv", nFireFighter));
-            BufferedWriter bw = new BufferedWriter(new FileWriter(file));
+            File simulationLogFile = new File(String.format("traces/" + testSession + "/" + testSession + "_simulation_logs.csv"));
 
-            File file2 = new File(String.format("traces/%dF_simulation_messageCnt.csv", nFireFighter));
-            BufferedWriter bw2 = new BufferedWriter(new FileWriter(file2));
+            BufferedWriter simulationLogWriter = new BufferedWriter(new FileWriter(simulationLogFile, true));
 
-            // For all SoS types
-            for (MCIResponseScenario.SoSType sostype : MCIResponseScenario.SoSType.values()) {
-                if (sostype != MCIResponseScenario.SoSType.Virtual)
-                    continue;
-                System.out.println(sostype);
-                Scenario scenario = new MCIResponseScenario(sostype, nPatient, nFireFighter, 0, 0);
-                World world = scenario.getWorld();
+//            simulationLogWriter.write("nPatient,nFireFighter,SoSType,Duration,MessageCount");
+//            simulationLogWriter.newLine();
 
-                Date nowDate = new Date();
-                SimpleDateFormat transFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-                String pre = transFormat.format(nowDate);
-                System.out.println(pre);
+            // nPatient, nFireFighter
+            SoSType[] targetTypeArray = {SoSType.Virtual, SoSType.Collaborative, SoSType.Acknowledged, SoSType.Directed};
+            int[] nPatientArray = {100};
+            int[] nFireFighterArray = {2, 3, 4, 5, 6, 7, 8, 9, 10, 20, 40, 60, 80, 100};
 
-//                cntFailure = 0;
-                long durationsum = 0;
-                for (int i = minTrial; i <= maxTrial; i++) {
-                    world.setSeed(new Random().nextLong());
-                    ((MCIResponseWorld) world).setSoSType(sostype);
+            ArrayList<Snapshot> trace;
+            long startTime;
+            long duration;
+            long durationSum;
+            int messageCnt;
+            int messageCntSum;
 
-                    startTime = System.currentTimeMillis();
+            for (int nPatient : nPatientArray) {
+                for (int nFireFighter : nFireFighterArray) {
+                    for (SoSType sostype : targetTypeArray) {
+                        System.out.println("Patient: " + nPatient + ", Firefighter: " + nFireFighter + ", SoS: " + sostype);
+                        System.out.println(datetimeFormat.format(new Date()));
 
-                    ArrayList<Snapshot> trace = Simulator.execute(world, endTick);
+                        Scenario scenario = new MCIResponseScenario(sostype, nPatient, nFireFighter, 0, 0);
+                        World world = scenario.getWorld();
 
-                    duration = (System.currentTimeMillis() - startTime);
-                    durationsum += duration;
-                    bw.write(sostype.toString() + "," + duration);
-                    bw.newLine();
-                    bw.flush();
-                    bw2.write(sostype.toString() + "," + world.getCurrentSnapshot().getProperties().get(1).value);
-                    bw2.newLine();
-                    bw.flush();
+                        durationSum = 0;
+                        messageCntSum = 0;
+                        for (int i = minTrial - 1; i <= maxTrial; i++) {
+                            world.setSeed(new Random().nextLong());
+                            ((MCIResponseWorld) world).setSoSType(sostype);
 
-                    writeTrace(trace, String.format("traces/%dF/%s_%dF_%04d.txt", nFireFighter, sostype, nFireFighter, i));
-//                    if ((int) world.getCurrentSnapshot().getProperties().get(0).value != nPatient) {
-//                        cntFailure++;
-//                        System.out.println("Failure" + world.getCurrentSnapshot().getProperties().get(0).value);
-//                    }
-                    if (i % 250 == 0)
-                        System.out.println("> Trace collected: " + i);
-//                ArrayList<Patient> patients = (ArrayList<Patient>) world.getResources().get("Patients");
-//                int numPulledout = 0;
-//
-//                for (Patient patient : patients)
-//                    if (patient.getStatus() == Patient.Status.Pulledout)
-//                        numPulledout++;
+                            startTime = System.currentTimeMillis();
 
-//                System.out.println(world.getCurrentSnapshot().getProperties().get(0).value + ", duration: " + duration);
-//                if (numPulledout == patients.size())
-//                    cntComplete++;
+                            trace = Simulator.execute(world, endTick);
+
+                            if (i == minTrial - 1)
+                                continue;
+
+                            duration = (System.currentTimeMillis() - startTime);
+                            durationSum += duration;
+                            messageCnt = (int) world.getCurrentSnapshot().getProperties().get(1).value;
+                            messageCntSum += messageCnt;
+
+                            simulationLogWriter.write(nPatient + "," + nFireFighter + "," + sostype.toString() + "," + duration + "," + messageCnt);
+                            simulationLogWriter.newLine();
+
+                            writeTrace(trace, String.format("traces/%s/%04d_%03d_%s_%04d.txt", testSession, nPatient, nFireFighter, sostype, i));
+                        }
+
+                        simulationLogWriter.flush();
+                        System.out.println("Average duration: " + durationSum / (maxTrial - minTrial + 1));
+                        System.out.println("Average messageCnt: " + messageCntSum / (maxTrial - minTrial + 1));
+                    }
                 }
-                System.out.println("Done!");
-//                System.out.println("Completeness: " + (maxTrial - cntFailure) + "/" + maxTrial);
-                System.out.println("Average duration: " + durationsum / (maxTrial - minTrial + 1));
             }
 
-            bw.close();
-            bw2.close();
+            simulationLogWriter.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
 
-        Date nowDate = new Date();
-        SimpleDateFormat transFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-        String pre = transFormat.format(nowDate);
-        System.out.println(pre);
+        System.out.println("Session complete: " + datetimeFormat.format(new Date()));
     }
 
     private static void writeTrace(List<Snapshot> trace, String filename) {
