@@ -24,16 +24,14 @@ import java.util.Map;
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions: TBD
  */
-public class TransientStateProbability implements CheckerInterface {
+public class SteadyStateProbability implements CheckerInterface {
 
     private double prob;
     private int endtick;
-    private int t_u; // untill time tick
     private int target_benefit;
 
-    public void init(double prob, int t_u, int target_benefit) {
+    public void init(double prob, int target_benefit) {
         this.prob = prob;
-        this.t_u = t_u;
         this.target_benefit = target_benefit;
     }
 
@@ -41,18 +39,17 @@ public class TransientStateProbability implements CheckerInterface {
     public void init(String[] params) {
         this.prob = Double.parseDouble(params[2]);
         this.endtick = Integer.parseInt(params[3]);
-        this.t_u = Integer.parseInt(params[6]);
         this.target_benefit = Integer.parseInt(params[5]);
     }
 
     @Override
     public String getName() {
-        return "Transient State Probability Checker";
+        return "Steady State Probability Checker";
     }
 
     @Override
     public String getDescription() {
-        return "Globally, \"The number of rescued patients is greater than or equal to " + this.target_benefit + "\" holds after " + this.t_u + " ticks.";
+        return "Globally, \"The number of rescued patients is greater than or equal to " + this.target_benefit + "\" holds in the long run.";
     }
 
     /**
@@ -73,13 +70,13 @@ public class TransientStateProbability implements CheckerInterface {
                 if(name.contains("SoS_level_benefit")){
                     int benefit = (Integer) debugTick.getValue().getProperty("SoS_level_benefit");
 
-                    if (t.getKey() >= t_u && benefit >= target_benefit)
+                    if (benefit >= target_benefit)
                         satisfied_transient++;
                 }
             }
         }
 
-        double simulatedProb = 1.0 * satisfied_transient / (this.endtick - this.t_u + 1);
+        double simulatedProb = 1.0 * satisfied_transient / (this.endtick + 1);
         if (simulatedProb >= this.prob)
             return 1;
         else

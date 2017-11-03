@@ -35,7 +35,7 @@ public class Universality implements CheckerInterface{
 
     @Override
     public String getDescription() {
-        return "Globally, it is always the case that \"Every PTS exists within the range between " + this.minRange + " and " + this.maxRange + "\" holds [time(P)] with a probability () than p.";
+        return "Globally, it is always the case that \"Every PTS exists within the range between " + this.minRange + " and " + this.maxRange + "\" holds.";
     }
 
     @Override

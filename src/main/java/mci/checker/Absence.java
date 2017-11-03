@@ -36,7 +36,7 @@ public class Absence implements CheckerInterface{
      * Return the description
      */
     public String getDescription() {
-        return "Globally, it is never the case that \"Dead patients become alive again\" holds";
+        return "Globally, it is never the case that \"Dead patients become alive again\" holds.";
     }
 
     @Override

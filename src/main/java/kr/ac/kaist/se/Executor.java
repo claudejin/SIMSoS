@@ -86,17 +86,21 @@ public class Executor {
             checker = new Universality();
         } else if (args[1].equalsIgnoreCase("TransientStateProbability")) {
             checker = new TransientStateProbability();
+        } else if (args[1].equalsIgnoreCase("SteadyStateProbability")) {
+            checker = new SteadyStateProbability();
         } else {
             // Undefined Checker
         }
         checker.init(args);
 
+        SimpleDateFormat datetimeFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         System.out.println("==========================================\n" +
                 "[ Simulation Description ]\n" +
                 "Parameters: " + params + "\n" +
                 "Scenario: " + sim.getScenario().getDescription() + "\n" +
                 "Checker: " + checker.getName() + "\n" +
-                "Statement: " + ANSI_RED + checker.getDescription() + ANSI_RESET);
+                "Statement: " + ANSI_RED + checker.getDescription() + ANSI_RESET + "\n" +
+                "Simulation Starts: " + datetimeFormat.format(new Date()));
 
         System.out.println("==========================================\n" +
                 "[ Simulation Log ]");
@@ -107,10 +111,6 @@ public class Executor {
         String finalres = "True";
 
         for (double alpha_beta : ARR_ALPHA_BETA) {
-            Date nowDate = new Date();
-            SimpleDateFormat transFormat = new SimpleDateFormat("yyyyMMddHHmmss");
-            String pre = transFormat.format(nowDate);
-
             checker.init(args);
             SPRTMethod sprt = new SPRTMethod(alpha_beta, alpha_beta, 0.01); // 신뢰도 99%
 //            ArrayList<SMCResult> resList = new ArrayList<>();
@@ -230,6 +230,7 @@ public class Executor {
                 "Total Examined Samples: " + totalsamples + " samples\n" +
                 "Total Time to Decide: " + String.format("%.2f", totaltime / 1000.0) + " secs\n" +
                 "Total Elapsed Time: " + String.format("%.2f", (System.currentTimeMillis() - totalstart) / 1000.0) + " secs\n" +
+                "Simulation Ends: " + datetimeFormat.format(new Date()) + "\n" +
                 "==========================================\n" +
                 "Finished.");
     }

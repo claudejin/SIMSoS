@@ -1,5 +1,3 @@
-Scenario,Checker,Probability,Optional1,Optional2,,
-MCI,Existence,0.95,6000,100,90,
-MCI,Absence,0.95,6000,100,,
-MCI,Universality,0.95,6000,100,0,100
-MCI,TransientStateProbability,0.95,6000,100,6000,90
+Scenario,Checker,Probability,Optional1,Optional2,Optional3,Optional4
+MCI,TransientStateProbability,0.95,6000,100,90,5900
+MCI,SteadyStateProbability,0.5,6000,100,50,

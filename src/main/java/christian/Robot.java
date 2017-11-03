@@ -47,7 +47,6 @@ public class Robot extends BaseConstituent{
         if(xpos != 10) {
             int ranNum = this.ranNumGenerator.nextInt(100);
             if (ranNum == 0) {
-                System.out.println(this.getName() + ", Dropped!");
                 token = false; // loose its token;
             }
         }

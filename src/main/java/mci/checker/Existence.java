@@ -69,7 +69,7 @@ public class Existence implements CheckerInterface{
      */
     public String getDescription() {
         // "SoS-level benefit is greater than and equal to " + this,baseSoSBenefit
-        return "Globally, \"The number of rescued patients is greater than or equal to " + this.baseSoSBenefit + "\" holds eventually by " + this.baseTick + " ticks";
+        return "Globally, \"The number of rescued patients is greater than or equal to " + this.baseSoSBenefit + "\" holds eventually by " + this.baseTick + " ticks.";
     }
 
     /**
