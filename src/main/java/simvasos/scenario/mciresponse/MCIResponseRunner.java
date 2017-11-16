@@ -35,8 +35,8 @@ public class MCIResponseRunner {
 
             // nPatient, nFireFighter
             SoSType[] targetTypeArray = {SoSType.Virtual, SoSType.Collaborative, SoSType.Acknowledged, SoSType.Directed};
-            int[] nPatientArray = {100};
-            int[] nFireFighterArray = {2, 3, 4, 5, 6, 7, 8, 9, 10, 20, 40, 60, 80, 100};
+            int[] nPatientArray = {10, 50, 100, 300, 500};
+            int[] nFireFighterArray = {2, 3, 10, 60, 100};
 
             ArrayList<Snapshot> trace;
             long startTime;
