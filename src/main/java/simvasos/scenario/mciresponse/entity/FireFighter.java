@@ -16,7 +16,7 @@ import java.util.HashMap;
 public class FireFighter extends ABCPlusCS {
 
     Maptrix<Integer> expectedPatientsMap = (Maptrix<Integer>) this.world.getResources().get("ExpectedPatientsMap");
-    Maptrix<Boolean> beliefMap = new Maptrix<Boolean>(Boolean.TYPE, MCIResponseWorld.MAP_SIZE.getLeft(), MCIResponseWorld.MAP_SIZE.getRight());
+//    Maptrix<Boolean> beliefMap = new Maptrix<Boolean>(Boolean.TYPE, MCIResponseWorld.MAP_SIZE.getLeft(), MCIResponseWorld.MAP_SIZE.getRight());
 
     private Location location = new Location(MCIResponseWorld.MAP_SIZE.getLeft() / 2, MCIResponseWorld.MAP_SIZE.getRight() / 2);;
     private Location headingLocation = null;
@@ -218,7 +218,7 @@ public class FireFighter extends ABCPlusCS {
 //            totalCost += this.world.random.nextInt(8);
 
             // Belief cost
-            totalCost += this.beliefMap.getValue(nextLocation.getX(), nextLocation.getY()) ? 4 : 0;
+//            totalCost += this.beliefMap.getValue(nextLocation.getX(), nextLocation.getY()) ? 4 : 0;
             totalCost -= this.expectedPatientsMap.getValue(nextLocation.getX(), nextLocation.getY()) * 4;
         }
 
@@ -227,10 +227,10 @@ public class FireFighter extends ABCPlusCS {
 
     @Override
     public void reset() {
-        this.beliefMap.reset();
-        for (int x = 0; x < MCIResponseWorld.MAP_SIZE.getLeft(); x++)
-            for (int y = 0; y < MCIResponseWorld.MAP_SIZE.getRight(); y++)
-                this.beliefMap.setValue(x, y, false);
+//        this.beliefMap.reset();
+//        for (int x = 0; x < MCIResponseWorld.MAP_SIZE.getLeft(); x++)
+//            for (int y = 0; y < MCIResponseWorld.MAP_SIZE.getRight(); y++)
+//                this.beliefMap.setValue(x, y, false);
 
         this.status = Status.Pullout;
         this.idleTime = 0;
@@ -275,7 +275,7 @@ public class FireFighter extends ABCPlusCS {
 //                FireFighter.this.headingLocation = null;
 //                System.out.println(FireFighter.this.getName() + ": idle time reset");
             } else {
-                FireFighter.this.beliefMap.setValue(FireFighter.this.location, true);
+//                FireFighter.this.beliefMap.setValue(FireFighter.this.location, true);
                 FireFighter.this.pulledoutPatient = null;
                 FireFighter.this.idleTime++;
 //                System.out.println(FireFighter.this.getName() + ": idle " + FireFighter.this.idleTime + " times");
