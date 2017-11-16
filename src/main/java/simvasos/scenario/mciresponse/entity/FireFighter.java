@@ -207,14 +207,14 @@ public class FireFighter extends ABCPlusCS {
 
         // Voluntary heading location
         } else if (this.headingLocation != null) {
-            // Uncertainty
-            totalCost += this.world.random.nextInt(8);
+//            // Uncertainty
+//            totalCost += this.world.random.nextInt(8);
 
             // Headindg cost
             totalCost += nextLocation.distanceTo(this.headingLocation);
         } else {
-            // Uncertainty
-            totalCost += this.world.random.nextInt(8);
+//            // Uncertainty
+//            totalCost += this.world.random.nextInt(8);
 
             // Belief cost
             totalCost += this.beliefMap.getValue(nextLocation.getX(), nextLocation.getY()) ? 4 : 0;

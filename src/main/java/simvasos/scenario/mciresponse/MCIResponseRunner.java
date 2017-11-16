@@ -20,7 +20,7 @@ public class MCIResponseRunner {
     public static void main(String[] args) {
         SimpleDateFormat datetimeFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
-        String testSession = "ABCPlus_AllTypes";
+        String testSession = "ABC_Knowledge";
         int endTick = 7500; // 8000
         int minTrial = 1;
         int maxTrial = 1000;
@@ -34,7 +34,7 @@ public class MCIResponseRunner {
 //            simulationLogWriter.newLine();
 
             // nPatient, nFireFighter
-            SoSType[] targetTypeArray = {SoSType.Virtual, SoSType.Collaborative, SoSType.Acknowledged, SoSType.Directed};
+            SoSType[] targetTypeArray = {SoSType.Virtual};
             int[] nPatientArray = {10, 50, 100, 300, 500};
             int[] nFireFighterArray = {2, 3, 10, 60, 100};
 
