@@ -28,15 +28,15 @@ public class MCIResponseRunner {
         try {
             File simulationLogFile = new File(String.format("traces/" + testSession + "/" + testSession + "_simulation_logs.csv"));
 
-            BufferedWriter simulationLogWriter = new BufferedWriter(new FileWriter(simulationLogFile));
+            BufferedWriter simulationLogWriter = new BufferedWriter(new FileWriter(simulationLogFile, true));
 
-            simulationLogWriter.write("nPatient,nFireFighter,SoSType,Duration,MessageCount");
-            simulationLogWriter.newLine();
+//            simulationLogWriter.write("nPatient,nFireFighter,SoSType,Duration,MessageCount");
+//            simulationLogWriter.newLine();
 
             // nPatient, nFireFighter
             SoSType[] targetTypeArray = {SoSType.Virtual}; // , SoSType.Collaborative, SoSType.Acknowledged, SoSType.Directed};
-            int[] nPatientArray = {100};
-            int[] nFireFighterArray = {2, 20, 40, 60, 80, 100};
+            int[] nPatientArray = {10, 50, 100, 300, 500};
+            int[] nFireFighterArray = {2, 3, 10, 60, 100};
 
             ArrayList<Snapshot> trace;
             long startTime;
