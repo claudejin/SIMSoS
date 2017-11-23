@@ -72,8 +72,7 @@ public class FireFighter extends ABCPlusCS {
 
     @Override
     protected void generateActiveImmediateActions() {
-        // Do pullout patients at this location
-        this.immediateActionList.add(new ABCItem(this.pulloutPatient, 10, 1));
+        this.immediateActionList.add(new ABCItem(Action.getNullAction(0, "ImmediateNullAction"), 10, 0));
 
         if ((SoSType) this.world.getResources().get("Type") != SoSType.Virtual) {
             // Report pullout belief to others
@@ -145,6 +144,19 @@ public class FireFighter extends ABCPlusCS {
 
     @Override
     protected void generateNormalActions() {
+        ArrayList<Patient> trappedPatients = ((MCIResponseWorld) FireFighter.this.world).getTrappedPatients(FireFighter.this.location);
+
+        if (trappedPatients.size() > 0) {
+            this.status = Status.Pullout;
+            this.normalActionList.add(new ABCItem(this.pulloutPatient, 10*trappedPatients.size(), 1*trappedPatients.size()));
+        } else {
+            this.status = Status.Complete;
+            this.beliefMap.setValue(FireFighter.this.location, true);
+            this.pulledoutPatient = null;
+            this.idleTime++;
+//            System.out.println(FireFighter.this.getName() + ": idle " + FireFighter.this.idleTime + " times");
+        }
+
         // N-Autonomous Moves
         if (this.status == Status.Complete) {
             switch ((SoSType) this.world.getResources().get("Type")) {
@@ -252,31 +264,22 @@ public class FireFighter extends ABCPlusCS {
     @Override
     public HashMap<String, Object> getProperties() {
         HashMap<String, Object> properties = new HashMap<String, Object>();
+//        properties.put("PulloutBeliefMap", this.beliefMap);
         properties.put("Location", this.location);
         return properties;
     }
 
-    private final Action pulloutPatient = new Action(0) {
+    private final Action pulloutPatient = new Action(1) {
 
         @Override
         public void execute() {
             ArrayList<Patient> trappedPatients = ((MCIResponseWorld) FireFighter.this.world).getTrappedPatients(FireFighter.this.location);
-
-            if (trappedPatients.size() > 1)
-                FireFighter.this.status = Status.Pullout;
-            else
-                FireFighter.this.status = Status.Complete;
 
             if (trappedPatients.size() > 0) {
                 FireFighter.this.pulledoutPatient = trappedPatients.get(0);
                 pulledoutPatient.setStatus(Patient.Status.Pulledout);
                 FireFighter.this.idleTime = 0;
 //                System.out.println(FireFighter.this.getName() + ": idle time reset");
-            } else {
-                FireFighter.this.beliefMap.setValue(FireFighter.this.location, true);
-                FireFighter.this.pulledoutPatient = null;
-                FireFighter.this.idleTime++;
-//                System.out.println(FireFighter.this.getName() + ": idle " + FireFighter.this.idleTime + " times");
             }
         }
 

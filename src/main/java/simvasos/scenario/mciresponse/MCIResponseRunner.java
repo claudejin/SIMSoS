@@ -20,10 +20,10 @@ public class MCIResponseRunner {
     public static void main(String[] args) {
         SimpleDateFormat datetimeFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
-        String testSession = "ABCPlus_AllTypes";
-        int endTick = 7500; // 8000
-        int minTrial = 1;
-        int maxTrial = 1000;
+        String testSession = "ABCPlus_Rebuilt";
+        int endTick = 7200;//5000 // 8000
+        int minTrial = 101;
+        int maxTrial = 250;//50
 
         try {
             File simulationLogFile = new File(String.format("traces/" + testSession + "/" + testSession + "_simulation_logs.csv"));
@@ -35,8 +35,8 @@ public class MCIResponseRunner {
 
             // nPatient, nFireFighter
             SoSType[] targetTypeArray = {SoSType.Virtual, SoSType.Collaborative, SoSType.Acknowledged, SoSType.Directed};
-            int[] nPatientArray = {10, 50, 100, 300, 500};
-            int[] nFireFighterArray = {2, 3, 10, 60, 100};
+            int[] nPatientArray = {50, 100, 150, 200, 250}; //{10, 50, 100, 300, 500};
+            int[] nFireFighterArray = {2, 5, 10, 25, 50}; //{2, 3, 10, 60, 100};
 
             ArrayList<Snapshot> trace;
             long startTime;
@@ -44,6 +44,7 @@ public class MCIResponseRunner {
             long durationSum;
             int messageCnt;
             int messageCntSum;
+            int goalSum;
 
             for (int nPatient : nPatientArray) {
                 for (int nFireFighter : nFireFighterArray) {
@@ -56,6 +57,7 @@ public class MCIResponseRunner {
 
                         durationSum = 0;
                         messageCntSum = 0;
+                        goalSum = 0;
                         for (int i = minTrial - 1; i <= maxTrial; i++) {
                             world.setSeed(new Random().nextLong());
                             ((MCIResponseWorld) world).setSoSType(sostype);
@@ -69,6 +71,7 @@ public class MCIResponseRunner {
 
                             duration = (System.currentTimeMillis() - startTime);
                             durationSum += duration;
+                            goalSum += (int) world.getCurrentSnapshot().getProperties().get(0).value;
                             messageCnt = (int) world.getCurrentSnapshot().getProperties().get(1).value;
                             messageCntSum += messageCnt;
 
@@ -80,7 +83,9 @@ public class MCIResponseRunner {
 
                         simulationLogWriter.flush();
                         System.out.println("Average duration: " + durationSum / (maxTrial - minTrial + 1));
+                        System.out.println("Average goalAchievement: " + goalSum * 100.0 / nPatient / (maxTrial - minTrial + 1));
                         System.out.println("Average messageCnt: " + messageCntSum / (maxTrial - minTrial + 1));
+                        System.out.println("");
                     }
                 }
             }
