@@ -10,6 +10,7 @@ import java.util.HashMap;
 public abstract class Agent implements HasName {
     protected World world = null;
     protected String name = null;
+    protected Scenario.SoSType sosType = Scenario.SoSType.Virtual;
 
     public Agent(World world) {
         this.world = world;
@@ -18,6 +19,13 @@ public abstract class Agent implements HasName {
     public abstract Action step();
     public abstract void reset();
     public abstract String getName();
+    public abstract String setName(String name);
+    public Scenario.SoSType getSoSType() {
+        return this.sosType;
+    }
+    public void setSosType(Scenario.SoSType sosType) {
+        this.sosType = sosType;
+    }
 
     public abstract HashMap<String, Object> getProperties();
 }

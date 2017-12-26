@@ -6,6 +6,8 @@ import simvasos.propcheck.PropertyChecker;
  * Created by mgjin on 2017-06-22.
  */
 public abstract class Scenario {
+    public enum SoSType {Virtual, Collaborative, Acknowledged, Directed}
+
     protected World world = null;
     protected PropertyChecker checker = null;
 

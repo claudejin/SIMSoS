@@ -97,6 +97,11 @@ public class Robot extends Agent{
     }
 
     @Override
+    public String setName(String name) {
+        return this.name = name;
+    }
+
+    @Override
     public String getSymbol() {
         return "R";
     }
