@@ -2,23 +2,25 @@ package simvasos.scenario.mciresponse.entity;
 
 import simvasos.modelparsing.modeling.ABCPlus.ABCItem;
 import simvasos.modelparsing.modeling.ABCPlus.ABCPlusCS;
-import simvasos.scenario.mciresponse.MCIResponseScenario.SoSType;
 import simvasos.scenario.mciresponse.MCIResponseWorld;
 import simvasos.scenario.mciresponse.Patient;
 import simvasos.simulation.component.Action;
 import simvasos.simulation.component.Message;
+import simvasos.simulation.component.Scenario;
 import simvasos.simulation.component.World;
 import simvasos.simulation.util.Location;
 import simvasos.simulation.util.Maptrix;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.PriorityQueue;
 
 public class FireFighter extends ABCPlusCS {
+    Maptrix<Boolean> beliefMap = new Maptrix<Boolean>(Boolean.TYPE, ((MCIResponseWorld) this.world).MAP_SIZE.getLeft(), ((MCIResponseWorld) this.world).MAP_SIZE.getRight());
 
-    Maptrix<Integer> expectedPatientsMap = (Maptrix<Integer>) this.world.getResources().get("ExpectedPatientsMap");
-    Maptrix<Boolean> beliefMap = new Maptrix<Boolean>(Boolean.TYPE, MCIResponseWorld.MAP_SIZE.getLeft(), MCIResponseWorld.MAP_SIZE.getRight());
-
-    private Location location = new Location(MCIResponseWorld.MAP_SIZE.getLeft() / 2, MCIResponseWorld.MAP_SIZE.getRight() / 2);;
+    private Location startingLocation = new Location(0, 0);
+    private Location location = new Location(0, 0); // new Location(((MCIResponseWorld) this.world).MAP_SIZE.getLeft() / 2, ((MCIResponseWorld) this.world).MAP_SIZE.getRight() / 2);
     private Location headingLocation = null;
     private int headingBenefit = 0;
 
@@ -26,10 +28,17 @@ public class FireFighter extends ABCPlusCS {
     private Direction lastDirection;
 
     private enum Status {Pullout, Complete}
-    private int idleTime;
+//    private int idleTime;
     private Status status;
 
     private Patient pulledoutPatient = null;
+
+    public FireFighter(World world) {
+        super(world);
+
+        this.name = "Firefighter Unkown";
+        this.reset();
+    }
 
     public FireFighter(World world, String name) {
         super(world);
@@ -45,27 +54,22 @@ public class FireFighter extends ABCPlusCS {
 
     @Override
     protected void consumeInformation() {
+        if (this.sosType == Scenario.SoSType.Virtual)
+            return;
+
         for (Message message : this.incomingInformation) {
             // PullOut belief share from FireFighters
-            if (message.sender.startsWith("ControlTower") && message.purpose == Message.Purpose.Delivery && message.data.containsKey("PulloutBelief")) {
+            if (message.purpose == Message.Purpose.Delivery && message.data.containsKey("PulloutBelief")) {
                 Maptrix<Boolean> othersBeliefMap = (Maptrix<Boolean>) message.data.get("PulloutBelief");
 
                 boolean localBelief;
-                for (int x = 0; x < MCIResponseWorld.MAP_SIZE.getLeft(); x++)
-                    for (int y = 0; y < MCIResponseWorld.MAP_SIZE.getRight(); y++) {
+                for (int x = 0; x < ((MCIResponseWorld) this.world).MAP_SIZE.getLeft(); x++)
+                    for (int y = 0; y < ((MCIResponseWorld) this.world).MAP_SIZE.getRight(); y++) {
                         Location location = new Location(x, y);
                         localBelief = this.beliefMap.getValue(location);
                         localBelief = localBelief || othersBeliefMap.getValue(location);
                         this.beliefMap.setValue(location, localBelief);
                     }
-
-                switch ((SoSType) this.world.getResources().get("Type")) {
-                    case Collaborative:
-                    case Virtual:
-                        if (this.headingLocation != null)
-                            if (this.beliefMap.getValue(this.headingLocation))
-                                this.headingLocation = null;
-                }
             }
         }
     }
@@ -75,7 +79,8 @@ public class FireFighter extends ABCPlusCS {
         // Do pullout patients at this location
         this.immediateActionList.add(new ABCItem(this.pulloutPatient, 10, 1));
 
-        if ((SoSType) this.world.getResources().get("Type") != SoSType.Virtual) {
+        if (this.sosType == Scenario.SoSType.Acknowledged
+                || this.sosType == Scenario.SoSType.Directed) {
             // Report pullout belief to others
             Message beliefShare = new Message();
             beliefShare.name = "Report Pullout belief";
@@ -87,15 +92,31 @@ public class FireFighter extends ABCPlusCS {
             this.immediateActionList.add(new ABCItem(new SendMessage(beliefShare), 9, 1));
         }
 
-        // Set heading location to incomplete area
-        if ((SoSType) this.world.getResources().get("Type") != SoSType.Directed) {
-            if (this.idleTime >= 4)
-                this.immediateActionList.add(new ABCItem(this.setHeadingLocation, 5, 0));
+        if (this.sosType != Scenario.SoSType.Virtual) {
+            // Report pullout belief to others
+            Message beliefShare = new Message();
+            beliefShare.name = "Share Pullout belief";
+            beliefShare.sender = this.getName();
+            beliefShare.receiver = "FireFighter";
+            beliefShare.purpose = Message.Purpose.Delivery;
+            beliefShare.location = this.location;
+            beliefShare.data.put("PulloutBelief", this.beliefMap);
+
+            this.immediateActionList.add(new ABCItem(new SendMessage(beliefShare), 9, 1));
         }
+
+//        // Set heading location to incomplete area
+//        if (this.sosType != Scenario.SoSType.Directed) {
+//            if (this.idleTime >= 4)
+//                this.immediateActionList.add(new ABCItem(this.setHeadingLocation, 5, 0));
+//        }
     }
 
     @Override
     protected void generatePassiveImmediateActions() {
+        if (this.sosType == Scenario.SoSType.Virtual)
+            return;
+
         for (Message message : this.incomingRequests) {
             // N-Directed Moves
             if (message.sender.equals("ControlTower") && message.purpose == Message.Purpose.Order) {
@@ -123,11 +144,11 @@ public class FireFighter extends ABCPlusCS {
                 Location newLocation = (Location) message.data.get("HeadingLocation");
 
                 if (this.headingLocation == null && this.status == Status.Complete) {
-                    if (this.idleTime >= 4) {
+//                    if (this.idleTime >= 4) {
                         this.headingLocation = newLocation;
                         this.headingBenefit = (Integer) message.data.get("AdditionalBenefit");
                         accepted = true;
-                    }
+//                    }
                 }
 
                 Message beliefShare = new Message();
@@ -147,7 +168,7 @@ public class FireFighter extends ABCPlusCS {
     protected void generateNormalActions() {
         // N-Autonomous Moves
         if (this.status == Status.Complete) {
-            switch ((SoSType) this.world.getResources().get("Type")) {
+            switch (this.sosType) {
                 case Directed:
                     addFourDirectionMoves(this.directedNormalActionList, 0, true);
                     break;
@@ -161,69 +182,77 @@ public class FireFighter extends ABCPlusCS {
     }
 
     public void addFourDirectionMoves(ArrayList<ABCItem> actionList, int additionalBenefit, boolean directMove) {
-        if (this.location.getX() > 0)
-            actionList.add(new ABCItem(new Move(Direction.LEFT), additionalBenefit, calculateMoveCost(Direction.LEFT, directMove)));
-        if (this.location.getX() < MCIResponseWorld.MAP_SIZE.getLeft() - 1)
-            actionList.add(new ABCItem(new Move(Direction.RIGHT), additionalBenefit, calculateMoveCost(Direction.RIGHT, directMove)));
-        if (this.location.getY() > 0)
-            actionList.add(new ABCItem(new Move(Direction.UP), additionalBenefit, calculateMoveCost(Direction.UP, directMove)));
-        if (this.location.getY() < MCIResponseWorld.MAP_SIZE.getRight() - 1)
-            actionList.add(new ABCItem(new Move(Direction.DOWN), additionalBenefit, calculateMoveCost(Direction.DOWN, directMove)));
-    }
+        int x = this.location.getX();
+        int y = this.location.getY();
 
-    public int calculateMoveCost(Direction direction, boolean directMove) {
-        if (direction == Direction.LEFT)
-            return calculateMoveCost(-1, 0, directMove);
-        else if (direction == Direction.RIGHT)
-            return calculateMoveCost(1, 0, directMove);
-        else if (direction == Direction.UP)
-            return calculateMoveCost(0, -1, directMove);
-        else
-            return calculateMoveCost(0, 1, directMove);
-    }
+        int leftSum = 0, rightSum = 0, upSum = 0, downSum = 0;
+//        for (int dx = 0; dx < ((MCIResponseWorld) this.world).MAP_SIZE.getLeft(); dx++) {
+//            for (int dy = 0; dy < ((MCIResponseWorld) this.world).MAP_SIZE.getRight(); dy++) {
+//                if (this.beliefMap.getValue(dx, dy)) {
+//                    if (dx < x)
+//                        leftSum++;
+//                    else if (dx > x)
+//                        rightSum++;
+//
+//                    if (dy < y)
+//                        upSum++;
+//                    else if (dy > y)
+//                        downSum++;
+//                }
+//            }
+//        }
 
-    public int calculateMoveCost(int deltaX, int deltaY, boolean directMove) {
-        Location nextLocation = this.location.add(deltaX, deltaY);
-        return calculateMoveCost(nextLocation, directMove);
-    }
+        if (x > 0 && this.beliefMap.getValue(x - 1, y))
+            leftSum++;
+        if (x < ((MCIResponseWorld) this.world).MAP_SIZE.getLeft() - 1 && this.beliefMap.getValue(x + 1, y))
+            rightSum++;
+        if (y > 0 && this.beliefMap.getValue(x, y - 1))
+            upSum++;
+        if (y < ((MCIResponseWorld) this.world).MAP_SIZE.getRight() - 1 && this.beliefMap.getValue(x, y + 1))
+            downSum++;
 
-    public int calculateMoveCost(Location nextLocation, boolean directMove) {
-        int totalCost = 0;
+//        int startingPointPenalty = this.location.distanceTo(this.startingLocation);
 
-        // Directed or Acknowledged
-        if (directMove && this.headingLocation != null) {
-            // Headindg cost
-            totalCost += nextLocation.distanceTo(this.headingLocation);
-
-        // Voluntary heading location
-        } else if (this.headingLocation != null) {
-            // Uncertainty
-            totalCost += this.world.random.nextInt(8);
-
-            // Headindg cost
-            totalCost += nextLocation.distanceTo(this.headingLocation);
-        } else {
-            // Uncertainty
-            totalCost += this.world.random.nextInt(8);
-
-            // Belief cost
-            totalCost += this.beliefMap.getValue(nextLocation.getX(), nextLocation.getY()) ? 4 : 0;
-            totalCost -= this.expectedPatientsMap.getValue(nextLocation.getX(), nextLocation.getY()) * 4;
-        }
-
-        return totalCost;
+        if (x > 0)
+            actionList.add(new ABCItem(new Move(Direction.LEFT), additionalBenefit, leftSum) {
+                @Override
+                public int secondUtility() {
+                    return (0 - FireFighter.this.location.add(-1, 0).distanceTo(FireFighter.this.startingLocation));
+                }
+            });
+        if (x < ((MCIResponseWorld) this.world).MAP_SIZE.getLeft() - 1)
+            actionList.add(new ABCItem(new Move(Direction.RIGHT), additionalBenefit, rightSum) {
+                @Override
+                public int secondUtility() {
+                    return (0 - FireFighter.this.location.add(1, 0).distanceTo(FireFighter.this.startingLocation));
+                }
+            });
+        if (y > 0)
+            actionList.add(new ABCItem(new Move(Direction.UP), additionalBenefit, upSum) {
+                @Override
+                public int secondUtility() {
+                    return (0 - FireFighter.this.location.add(0, -1).distanceTo(FireFighter.this.startingLocation));
+                }
+            });
+        if (y < ((MCIResponseWorld) this.world).MAP_SIZE.getRight() - 1)
+            actionList.add(new ABCItem(new Move(Direction.DOWN), additionalBenefit, downSum) {
+                @Override
+                public int secondUtility() {
+                    return (0 - FireFighter.this.location.add(0, 1).distanceTo(FireFighter.this.startingLocation));
+                }
+            });
     }
 
     @Override
     public void reset() {
         this.beliefMap.reset();
-        for (int x = 0; x < MCIResponseWorld.MAP_SIZE.getLeft(); x++)
-            for (int y = 0; y < MCIResponseWorld.MAP_SIZE.getRight(); y++)
+        for (int x = 0; x < ((MCIResponseWorld) this.world).MAP_SIZE.getLeft(); x++)
+            for (int y = 0; y < ((MCIResponseWorld) this.world).MAP_SIZE.getRight(); y++)
                 this.beliefMap.setValue(x, y, false);
 
         this.status = Status.Pullout;
-        this.idleTime = 0;
-        this.location.setLocation(0,0);
+//        this.idleTime = 0;
+        this.location.setLocation(new Location(this.startingLocation));
 
         this.lastDirection = Direction.NONE;
         this.pulledoutPatient = null;
@@ -235,14 +264,24 @@ public class FireFighter extends ABCPlusCS {
     }
 
     @Override
+    public String setName(String name) {
+        return this.name = name;
+    }
+
+    @Override
     public String getSymbol() {
         return this.name.replace("FireFighter", "F");
+    }
+
+    public void setStartingLocation(Location location) {
+        this.startingLocation = new Location(location);
     }
 
     @Override
     public HashMap<String, Object> getProperties() {
         HashMap<String, Object> properties = new HashMap<String, Object>();
         properties.put("Location", new Location(this.location));
+        properties.put("PulloutBeliefMap", this.beliefMap);
         return properties;
     }
 
@@ -254,18 +293,20 @@ public class FireFighter extends ABCPlusCS {
 
             if (trappedPatients.size() > 1)
                 FireFighter.this.status = Status.Pullout;
-            else
+            else {
                 FireFighter.this.status = Status.Complete;
+                FireFighter.this.beliefMap.setValue(FireFighter.this.location, true);
+            }
 
             if (trappedPatients.size() > 0) {
                 FireFighter.this.pulledoutPatient = trappedPatients.get(0);
                 pulledoutPatient.setStatus(Patient.Status.Pulledout);
-                FireFighter.this.idleTime = 0;
+//                FireFighter.this.idleTime = 0;
 //                System.out.println(FireFighter.this.getName() + ": idle time reset");
             } else {
                 FireFighter.this.beliefMap.setValue(FireFighter.this.location, true);
                 FireFighter.this.pulledoutPatient = null;
-                FireFighter.this.idleTime++;
+//                FireFighter.this.idleTime++;
 //                System.out.println(FireFighter.this.getName() + ": idle " + FireFighter.this.idleTime + " times");
             }
         }
@@ -288,8 +329,8 @@ public class FireFighter extends ABCPlusCS {
 
                     @Override
                     public int compare(Location o1, Location o2) {
-                        int v1 = calculateMoveCost(FireFighter.this.location, o1);
-                        int v2 = calculateMoveCost(FireFighter.this.location, o2);
+                        int v1 = FireFighter.this.location.distanceTo(o1);
+                        int v2 = FireFighter.this.location.distanceTo(o2);
 
                         return v1 - v2;
                     }
@@ -312,16 +353,6 @@ public class FireFighter extends ABCPlusCS {
             return FireFighter.this.getName() + ": Set heading location to incomplete area";
         }
     };
-
-    public int calculateMoveCost(Location currentLocation, Location headingLocation) {
-        int totalCost = 0;
-        // Distance cost
-        totalCost += currentLocation.distanceTo(headingLocation);
-        // Belief cost
-        totalCost -= this.expectedPatientsMap.getValue(headingLocation.getX(), headingLocation.getY()) * 4;
-
-        return totalCost;
-    }
 
     private class Move extends Action {
         Direction direction = Direction.NONE;

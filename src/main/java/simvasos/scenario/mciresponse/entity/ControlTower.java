@@ -6,6 +6,7 @@ import simvasos.scenario.mciresponse.MCIResponseScenario;
 import simvasos.scenario.mciresponse.MCIResponseWorld;
 import simvasos.simulation.component.Agent;
 import simvasos.simulation.component.Message;
+import simvasos.simulation.component.Scenario;
 import simvasos.simulation.component.World;
 import simvasos.simulation.util.Location;
 import simvasos.simulation.util.Maptrix;
@@ -15,7 +16,7 @@ import java.util.*;
 public class ControlTower extends ABCPlusCS {
 
     Maptrix<Integer> expectedPatientsMap = (Maptrix<Integer>) this.world.getResources().get("ExpectedPatientsMap");
-    Maptrix<Boolean> pulloutBeliefMap = new Maptrix<Boolean>(Boolean.TYPE, MCIResponseWorld.MAP_SIZE.getLeft(), MCIResponseWorld.MAP_SIZE.getRight());
+    Maptrix<Boolean> pulloutBeliefMap = new Maptrix<Boolean>(Boolean.TYPE, ((MCIResponseWorld) this.world).MAP_SIZE.getLeft(), ((MCIResponseWorld) this.world).MAP_SIZE.getRight());
     ArrayList<FireFighter> fireFighters = new ArrayList<FireFighter>();
 
     public ControlTower(World world, String name) {
@@ -66,9 +67,8 @@ public class ControlTower extends ABCPlusCS {
     @Override
     protected void generateActiveImmediateActions() {
         // Share pullout belief
-        switch ((MCIResponseScenario.SoSType) this.world.getResources().get("Type")) {
+        switch (this.sosType) {
             case Acknowledged:
-            case Collaborative:
                 Message beliefShare = new Message();
                 beliefShare.name = "Share Pullout belief";
                 beliefShare.sender = this.getName();
@@ -81,7 +81,7 @@ public class ControlTower extends ABCPlusCS {
         }
 
         // Direct
-        switch ((MCIResponseScenario.SoSType) this.world.getResources().get("Type")) {
+        switch (this.sosType) {
             case Directed:
             case Acknowledged:
                 Collections.shuffle(this.fireFighters, this.world.random);
@@ -114,9 +114,9 @@ public class ControlTower extends ABCPlusCS {
                     direction.name = "Direct heading location";
                     direction.sender = this.getName();
                     direction.receiver = fireFighter.getName();
-                    if (this.world.getResources().get("Type") == MCIResponseScenario.SoSType.Directed)
+                    if (this.sosType == MCIResponseScenario.SoSType.Directed)
                         direction.purpose = Message.Purpose.Order;
-                    else if (this.world.getResources().get("Type") == MCIResponseScenario.SoSType.Acknowledged) {
+                    else if (this.sosType == MCIResponseScenario.SoSType.Acknowledged) {
                         direction.purpose = Message.Purpose.ReqAction;
                         direction.data.put("AdditionalBenefit", (mapX + mapY) / 4);
                     }
@@ -151,14 +151,20 @@ public class ControlTower extends ABCPlusCS {
     @Override
     public void reset() {
         this.pulloutBeliefMap.reset();
-        for (int x = 0; x < MCIResponseWorld.MAP_SIZE.getLeft(); x++)
-            for (int y = 0; y < MCIResponseWorld.MAP_SIZE.getRight(); y++)
+        for (int x = 0; x < ((MCIResponseWorld) this.world).MAP_SIZE.getLeft(); x++)
+            for (int y = 0; y < ((MCIResponseWorld) this.world).MAP_SIZE.getRight(); y++)
                 this.pulloutBeliefMap.setValue(x, y, false);
+        this.sosType = Scenario.SoSType.Acknowledged;
     }
 
     @Override
     public String getName() {
         return this.name;
+    }
+
+    @Override
+    public String setName(String name) {
+        return this.name = name;
     }
 
     @Override

@@ -3,16 +3,17 @@ package simvasos.scenario.mciresponse;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.math3.distribution.NormalDistribution;
 import simvasos.modelparsing.modeling.ABCPlus.ABCPlusCS;
-import simvasos.scenario.mciresponse.MCIResponseScenario.SoSType;
-import simvasos.scenario.mciresponse.entity.Ambulance;
-import simvasos.scenario.mciresponse.entity.Hospital;
-import simvasos.simulation.util.*;
+import simvasos.scenario.mciresponse.entity.FireFighter;
 import simvasos.simulation.analysis.PropertyValue;
 import simvasos.simulation.analysis.Snapshot;
 import simvasos.simulation.component.Action;
 import simvasos.simulation.component.Agent;
 import simvasos.simulation.component.Message;
 import simvasos.simulation.component.World;
+import simvasos.simulation.util.Location;
+import simvasos.simulation.util.Maptrix;
+import simvasos.simulation.util.Pair;
+import simvasos.simulation.util.TimedValue;
 
 import java.util.*;
 
@@ -33,32 +34,35 @@ public class MCIResponseWorld extends World {
     public static final String ANSI_CYAN = "\u001B[36m";
     public static final String ANSI_WHITE = "\u001B[37m";
 
-    public SoSType type = null;
+    public MCIResponseScenario.PatientDistribution disPatient = MCIResponseScenario.PatientDistribution.Uniform;
     public final int nPatient;
+    public final int numStartingPoint;
+    public final int neighborhoodRange;
     public int messageCnt;
 
-    public static final Pair<Integer, Integer> MAP_SIZE = new Pair<Integer, Integer>(49, 49);
-    public final Maptrix<Integer> expectedPatientsMap = new Maptrix<Integer>(Integer.TYPE, MAP_SIZE.getLeft(), MAP_SIZE.getRight());
-    public final Maptrix<ArrayList> patientsMap = new Maptrix<ArrayList>(ArrayList.class, MAP_SIZE.getLeft(), MAP_SIZE.getRight());
+    public Pair<Integer, Integer> MAP_SIZE = null;
+    public ArrayList<Location> startingPoints = null;
+    public Maptrix<Integer> expectedPatientsMap = null;
+    public Maptrix<ArrayList> patientsMap = null;
 
     public ArrayList<Patient> patients = new ArrayList<Patient>();
 
     private static int stringFactor = 2;
 
-    public MCIResponseWorld(SoSType type, int nPatient) {
+    public MCIResponseWorld(Pair<Integer, Integer> mapSize, MCIResponseScenario.PatientDistribution distPatient, int numPatient, int numStartingPoint, int neighborhoodRange) {
         super(1);
 
-        this.setSoSType(type);
-        this.nPatient = nPatient;
+        MAP_SIZE = new Pair<Integer, Integer>(mapSize);
+
+        this.disPatient = distPatient;
+        this.nPatient = numPatient;
+        this.numStartingPoint = numStartingPoint;
+        this.neighborhoodRange = neighborhoodRange;
 
         for (int i = 0; i < nPatient; i++)
             patients.add(new Patient(this.random, "Patient" + (i+1)));
 
         this.reset();
-    }
-
-    public void setSoSType(SoSType type) {
-        this.type = type;
     }
 
     @Override
@@ -68,28 +72,36 @@ public class MCIResponseWorld extends World {
         for (Patient patient : this.patients)
             patient.reset();
 
-        // Adjust severity of patients
+        this.expectedPatientsMap = new Maptrix<Integer>(Integer.TYPE, MAP_SIZE.getLeft(), MAP_SIZE.getRight());
+        this.patientsMap = new Maptrix<ArrayList>(ArrayList.class, MAP_SIZE.getLeft(), MAP_SIZE.getRight());
 
         // Adjust geographical distribution of patients
         patientsMap.reset();
-        for (Patient patient : this.patients) {
-            patient.setLocation(getRandomPatientLocation());
-            patientsMap.getValue(patient.getLocation()).add(patient);
-        }
-        generateExpectedPatientsMap();
-
-        HashMap<String, Location> hospitalLocations = new HashMap<String, Location>();
-        HashMap<String, Integer> hospitalCapacities = new HashMap<String, Integer>();
-        for (Agent agent : this.agents)
-            if (agent instanceof Hospital) {
-                hospitalLocations.put(agent.getName(), (Location) agent.getProperties().get("Location"));
-                hospitalCapacities.put(agent.getName(), (int) agent.getProperties().get("Capacity"));
+        int pindex = 0;
+        for (int x = 0; x < MAP_SIZE.getLeft(); x++)
+            for (int y = 0; y < MAP_SIZE.getRight(); y++) {
+                this.patients.get(pindex).setLocation(new Location(x, y));
+                this.patientsMap.getValue(x, y).add(this.patients.get(pindex));
+                pindex++;
             }
 
+        this.startingPoints = new ArrayList<Location>();
+        this.startingPoints.add(new Location(0, 0)); // Left-top
+        this.startingPoints.add(new Location(MAP_SIZE.getLeft() - 1, 0)); // Right-top
+        this.startingPoints.add(new Location(0, MAP_SIZE.getRight() - 1)); // Left-bottom
+        this.startingPoints.add(new Location(MAP_SIZE.getLeft() - 1, MAP_SIZE.getRight() - 1)); // Right-bottom
+
+        Collections.shuffle(this.startingPoints, this.random);
+        int i = 0;
         for (Agent agent : this.agents)
-            if (agent instanceof Ambulance) {
-                ((Ambulance) agent).setHospitalInformation(hospitalLocations, hospitalCapacities);
+            if (agent instanceof FireFighter) {
+                ((FireFighter) agent).setStartingLocation(startingPoints.get(i++ % numStartingPoint));
             }
+//        for (Patient patient : this.patients) {
+//            patient.setLocation(getRandomPatientLocation());
+//            patientsMap.getValue(patient.getLocation()).add(patient);
+//        }
+//        generateExpectedPatientsMap();
 
         this.messageCnt = 0;
     }
@@ -117,13 +129,13 @@ public class MCIResponseWorld extends World {
     }
 
     private boolean checkValidPatientLocation(Location location) {
-        for (Agent agent : this.agents) {
-            if (agent instanceof Hospital) {
-                Location hospitalLocation = (Location) agent.getProperties().get("Location");
-                if (hospitalLocation.equals(location))
-                    return false;
-            }
-        }
+//        for (Agent agent : this.agents) {
+//            if (agent instanceof Hospital) {
+//                Location hospitalLocation = (Location) agent.getProperties().get("Location");
+//                if (hospitalLocation.equals(location))
+//                    return false;
+//            }
+//        }
 
         return true;
     }
@@ -170,7 +182,6 @@ public class MCIResponseWorld extends World {
     public HashMap<String, Object> getResources() {
         HashMap<String, Object> resources = new HashMap<String, Object>();
         resources.put("Time", this.time);
-        resources.put("Type", this.type);
         resources.put("Patients", this.patients);
         resources.put("ExpectedPatientsMap", this.expectedPatientsMap);
 
@@ -178,8 +189,6 @@ public class MCIResponseWorld extends World {
     }
 
     public void sendMessage(Message message) {
-//        System.out.println("Messages: " + message.sender + " - " + message.getName());
-
         // Send the message to the receiver(s)
         for (Agent agent : this.agents)
             if (agent instanceof ABCPlusCS) {
@@ -189,12 +198,14 @@ public class MCIResponseWorld extends World {
                 if (agent.getName().startsWith(message.receiver)) {
                     if (message.location == null) {
                         ((ABCPlusCS) agent).receiveMessage(message);
+//                        System.out.println("[Message]: FROM " + message.sender + " TO " + agent.getName() + " - " + message.getName());
                         this.messageCnt++;
                     } else {
                         Map<String, Object> props = agent.getProperties();
                         if (props.containsKey("Location"))
-                            if (message.location.equals(props.get("Location"))) {
+                            if (message.location.distanceTo((Location) props.get("Location")) <= this.neighborhoodRange) {
                                 ((ABCPlusCS) agent).receiveMessage(message);
+//                                System.out.println("[Message]: FROM " + message.sender + " TO " + agent.getName() + " - " + message.getName());
                                 this.messageCnt++;
                             }
                     }
@@ -227,15 +238,13 @@ public class MCIResponseWorld extends World {
         Snapshot snapshot = super.getCurrentSnapshot();
 //        Snapshot snapshot = new Snapshot();
 
-        LinkedHashMap<String, Object> worldProperties = new LinkedHashMap<String, Object>();
+        for (Patient patient : this.patients)
+            snapshot.addProperty(patient, "Location", patient.getLocation());
 
-//        worldProperties.put("Time", this.time);
+        LinkedHashMap<String, Object> worldProperties = new LinkedHashMap<String, Object>();
         worldProperties.put("Pulledout", getPulledoutPatients().size());
         worldProperties.put("MessageCnt", this.messageCnt);
         snapshot.addProperties(null, worldProperties);
-
-//        for (Patient patient : this.patients)
-//            snapshot.addProperty(patient, "Location", patient.getLocation());
 
 //        System.out.println("Time: " + this.time);
 //        printExpectedPatientsMap();
