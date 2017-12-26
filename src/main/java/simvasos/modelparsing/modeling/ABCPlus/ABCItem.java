@@ -16,4 +16,8 @@ public class ABCItem {
     public int utility() {
         return this.benefit - this.cost;
     }
+
+    public int secondUtility() {
+        return 0;
+    }
 }

@@ -30,6 +30,9 @@ public abstract class ABCPlusCS extends Agent {
     protected Comparator<ABCItem> utilityComparator = new Comparator<ABCItem>() {
         @Override
         public int compare(ABCItem o1, ABCItem o2) {
+            if (o2.utility() == o1.utility())
+                return o2.secondUtility() - o1.secondUtility();
+
             return o2.utility() - o1.utility();
         }
     };
