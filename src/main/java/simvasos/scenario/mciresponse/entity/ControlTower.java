@@ -24,11 +24,6 @@ public class ControlTower extends ABCPlusCS {
 
         this.name = name;
 
-        ArrayList<Agent> agents = this.world.getAgents();
-        for (Agent agent : agents)
-            if (agent instanceof FireFighter)
-                this.fireFighters.add((FireFighter) agent);
-
         this.reset();
     }
 
@@ -69,6 +64,7 @@ public class ControlTower extends ABCPlusCS {
         // Share pullout belief
         switch (this.sosType) {
             case Acknowledged:
+            case Directed:
                 Message beliefShare = new Message();
                 beliefShare.name = "Share Pullout belief";
                 beliefShare.sender = this.getName();
@@ -89,14 +85,21 @@ public class ControlTower extends ABCPlusCS {
                 int mapY = ((MCIResponseWorld) this.world).MAP_SIZE.getRight();
 
                 for (FireFighter fireFighter : this.fireFighters) {
+                    if (fireFighter.getSoSType() == Scenario.SoSType.Virtual || fireFighter.getSoSType() == Scenario.SoSType.Collaborative)
+                        continue;
+
                     Location fLocation = (Location) fireFighter.getProperties().get("Location");
+                    Location startingLocation = (Location) fireFighter.getStartingLocation();
 
                     PriorityQueue<Location> targetLocations = new PriorityQueue<Location>(mapX * mapY, new Comparator<Location>() {
 
                         @Override
                         public int compare(Location o1, Location o2) {
-                            int v1 = calculateMoveCost(fLocation, o1);
-                            int v2 = calculateMoveCost(fLocation, o2);
+                            int v1 = fLocation.distanceTo(o1);
+                            int v2 = fLocation.distanceTo(o2);
+
+                            if (v1 == v2)
+                                return startingLocation.distanceTo(o1) - startingLocation.distanceTo(o2);
 
                             return v1 - v2;
                         }
@@ -114,9 +117,9 @@ public class ControlTower extends ABCPlusCS {
                     direction.name = "Direct heading location";
                     direction.sender = this.getName();
                     direction.receiver = fireFighter.getName();
-                    if (this.sosType == MCIResponseScenario.SoSType.Directed)
+                    if (fireFighter.getSoSType() == MCIResponseScenario.SoSType.Directed)
                         direction.purpose = Message.Purpose.Order;
-                    else if (this.sosType == MCIResponseScenario.SoSType.Acknowledged) {
+                    else if (fireFighter.getSoSType() == MCIResponseScenario.SoSType.Acknowledged) {
                         direction.purpose = Message.Purpose.ReqAction;
                         direction.data.put("AdditionalBenefit", (mapX + mapY) / 4);
                     }
@@ -126,16 +129,6 @@ public class ControlTower extends ABCPlusCS {
                     this.immediateActionList.add(new ABCItem(new SendMessage(direction), 0, 1));
                 }
         }
-    }
-
-    public int calculateMoveCost(Location currentLocation, Location headingLocation) {
-        int totalCost = 0;
-        // Distance cost
-        totalCost += currentLocation.distanceTo(headingLocation);
-        // Belief cost
-        totalCost -= this.expectedPatientsMap.getValue(headingLocation.getX(), headingLocation.getY()) * 4;
-
-        return totalCost;
     }
 
     @Override
@@ -150,6 +143,12 @@ public class ControlTower extends ABCPlusCS {
 
     @Override
     public void reset() {
+        ArrayList<Agent> agents = this.world.getAgents();
+        this.fireFighters.clear();
+        for (Agent agent : agents)
+            if (agent instanceof FireFighter)
+                this.fireFighters.add((FireFighter) agent);
+
         this.pulloutBeliefMap.reset();
         for (int x = 0; x < ((MCIResponseWorld) this.world).MAP_SIZE.getLeft(); x++)
             for (int y = 0; y < ((MCIResponseWorld) this.world).MAP_SIZE.getRight(); y++)

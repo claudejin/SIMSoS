@@ -96,6 +96,7 @@ public class MCIResponseWorld extends World {
         for (Agent agent : this.agents)
             if (agent instanceof FireFighter) {
                 ((FireFighter) agent).setStartingLocation(startingPoints.get(i++ % numStartingPoint));
+                agent.reset();
             }
 //        for (Patient patient : this.patients) {
 //            patient.setLocation(getRandomPatientLocation());

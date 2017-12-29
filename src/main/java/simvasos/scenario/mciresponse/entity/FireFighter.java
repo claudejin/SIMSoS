@@ -277,6 +277,10 @@ public class FireFighter extends ABCPlusCS {
         this.startingLocation = new Location(location);
     }
 
+    public Location getStartingLocation() {
+        return this.startingLocation;
+    }
+
     @Override
     public HashMap<String, Object> getProperties() {
         HashMap<String, Object> properties = new HashMap<String, Object>();
