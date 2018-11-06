@@ -22,7 +22,13 @@ dependencies {
     // https://mvnrepository.com/artifact/com.internetitem/logback-elasticsearch-appender
      compile group: 'com.internetitem', name: 'logback-elasticsearch-appender', version: '1.4'
 
-    testCompile("org.junit.jupiter:junit-jupiter-api:5.0.0-M6")
-    testRuntime("org.junit.platform:junit-platform-launcher:1.0.0-M6")
-    testRuntime("org.junit.jupiter:junit-jupiter-engine:5.0.0-M6")
+    testCompile(
+            'org.junit.jupiter:junit-jupiter-api:5.1.0'
+    )
+    testRuntime(
+            'org.junit.jupiter:junit-jupiter-engine:5.1.0',
+            'org.junit.vintage:junit-vintage-engine:5.1.0',
+            'org.junit.platform:junit-platform-launcher:1.1.0',
+            'org.junit.platform:junit-platform-runner:1.1.0'
+    )
 }
